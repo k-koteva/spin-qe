@@ -1,0 +1,17 @@
+[project]
+name = "spin-qe"
+version = "0.1.0"
+description = "A package for simulating quantum energetics of the spin qubit platform using models from experiments."
+authors = [
+    {name = "k-koteva", email = "koteva.k.i@gmail.com"},
+]
+dependencies = [
+    "pydantic>=2.3.0",
+]
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
