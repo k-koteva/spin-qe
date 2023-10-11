@@ -1,0 +1,1 @@
+# a class for cable definitions and methods, re-writing of Marco's cables file

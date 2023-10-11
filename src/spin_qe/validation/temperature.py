@@ -1,3 +1,7 @@
+"""
+This module contains the Temperature class for validating temperature values.
+"""
+
 from typing import List, Union, Optional
 import numpy as np
 from pydantic import BaseModel, Field, ValidationError
@@ -5,7 +9,7 @@ from loguru import logger
 
 class Temperature(BaseModel):
     """
-    Temperature class for validating temperature values.
+    Temperature class for validating temperature values in Kelvin.
     """
     value: float = Field(..., gt=0, le=300)
 
@@ -46,6 +50,11 @@ class Temperature(BaseModel):
             logger.error(f"Validation error: {exc}")
             return None
 
+def main():
+    """
+    Main function to demonstrate the usage of the Temperature class.
+    """
+
 if __name__ == "__main__":
     # Sample data
     temperature_values = [1, 100, 300, -1, 400]
@@ -64,3 +73,7 @@ if __name__ == "__main__":
     temp_instance = Temperature.create_temperature(100)
     if temp_instance:
         print(f"Temperature instance created with value: {temp_instance.value}")
+
+    ## To do: Function to validate an array, list or single value of temperature and return the same object after validation. Type checking at output to match the input type. 
+
+    

@@ -2,7 +2,7 @@
 This module contains tests for the Temperature class in the spin_qe.base module.
 """
 import numpy as np
-from spin_qe.base import Temperature
+from spin_qe.validation.temperature import Temperature
 
 def test_validate_array():
     """
