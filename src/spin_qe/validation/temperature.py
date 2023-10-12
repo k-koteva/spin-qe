@@ -1,79 +1,112 @@
-"""
-This module contains the Temperature class for validating temperature values.
-"""
+from typing import List, Optional, Union
 
-from typing import List, Union, Optional
-import numpy as np
-from pydantic import BaseModel, Field, ValidationError
 from loguru import logger
+from pydantic import BaseModel, Field
 
-class Temperature(BaseModel):
-    """
-    Temperature class for validating temperature values in Kelvin.
-    """
-    value: float = Field(..., gt=0, le=300)
+
+class Temp(BaseModel):
+    K: Optional[float] = Field(None, gt=0, le=300)
+    mK: Optional[float] = Field(None, gt=0, le=300000)
+
+    def __init__(self, **data):
+        input_count = sum(1 for key in ['K', 'mK'] if key in data)
+        if input_count != 1:
+            raise ValueError("Exactly one of K or mK must be provided.")
+        super().__init__(**data)
+        self._update_values()
+
+    def _update_values(self):
+        if self.K is not None:
+            self.mK = self.K * 1000  # pylint: disable=invalid-name
+        elif self.mK is not None:
+            self.K = self.mK / 1000  # pylint: disable=invalid-name
 
     @classmethod
-    def validate_array(cls, temp_values: List[float]) -> np.ndarray:
-        """
-        Validates an array of temperature values and returns a NumPy array of valid temperatures.
-        """
-        validated_temps = []
-        for temp in temp_values:
-            try:
-                validated_temp = cls(value=temp)
-                validated_temps.append(validated_temp.value)
-            except ValidationError as exc:
-                logger.error(f"Validation error for temperature {temp}: {exc}")
-        return np.array(validated_temps)
+    def make(
+            cls,
+            K: Optional[float] = None,
+            mK: Optional[float] = None
+    ) -> 'Temp':
+        params = {}
+        input_count = sum(1 for value in [K, mK] if value is not None)
+        if input_count != 1:
+            raise ValueError("Exactly one of K or mK must be provided.")
+
+        if K is not None:
+            params['K'] = K
+        if mK is not None:
+            params['mK'] = mK
+
+        return cls(**params)
 
     @classmethod
-    def validate_single(cls, value: float) -> Optional[float]:
-        """
-        Validates a single temperature value and returns it if valid, otherwise returns None.
-        """
-        try:
-            validated_temp = cls(value=value)
-            return validated_temp.value
-        except ValidationError as exc:
-            logger.error(f"Validation error: {exc}")
+    def val(
+        cls,
+        K: Optional[Union[None, float, List[float]]  # pylint: disable=invalid-name
+                    ] = None,
+        mK: Optional[Union[None, float, List[float]]  # pylint: disable=invalid-name
+                     ] = None,
+        convert_to: Optional[str] = None
+    ) -> Union[None, float, List[float]]:
+
+        if K is None and mK is None:
             return None
+        input_type = 'K' if K is not None else 'mK'
+        if convert_to and convert_to not in ['K', 'mK']:
+            raise ValueError("Invalid convert_to, must be one of 'K', 'mK'")
 
-    @classmethod
-    def create_temperature(cls, value: float) -> Union['Temperature', None]:
-        """
-        Factory function to create a Temperature instance.
-        """
-        try:
-            return cls(value=value)
-        except ValidationError as exc:
-            logger.error(f"Validation error: {exc}")
-            return None
+        if convert_to is None:
+            convert_to = input_type
+
+        value = K if K is not None else mK
+
+        if isinstance(value, (float, int)):
+            instance_c = cls(**{input_type: float(value)})
+            return getattr(instance_c, convert_to)
+
+        if isinstance(value, list):
+            validated_values = [
+                cls.val(
+                    K=v if input_type == 'K' else None,
+                    mK=v if input_type == 'mK' else None,
+                    convert_to=convert_to
+                )
+                for v in value
+            ]
+            return [
+                val
+                for sublist in validated_values
+                for val in (sublist if isinstance(sublist, list) else [sublist])
+                if val is not None
+            ]
+
+        raise ValueError("Invalid input type.")
+
+# Example usage
+
 
 def main():
-    """
-    Main function to demonstrate the usage of the Temperature class.
-    """
+    # Using make factory method
+    temp_instance = Temp.make(K=100)
+    logger.info(
+        f"Created Temp instance with K: {temp_instance.K}, mK: {temp_instance.mK}")
+
+    # Using val method for single float
+    k_val = Temp.val(K=100)
+    logger.info(f"Single float in K: {k_val}")
+
+    mK_val = Temp.val(  # pylint: disable=invalid-name
+        mK=100000, convert_to='K')
+    logger.info(f"Single float in mK converted to K: {mK_val}")
+
+    # Using val method for list of floats
+    k_list = Temp.val(K=[100, 200])
+    logger.info(f"List of floats in K: {k_list}")
+
+    mK_list = Temp.val(mK=[100000, 200000],  # pylint: disable=invalid-name
+                       convert_to='K')
+    logger.info(f"List of floats in mK converted to K: {mK_list}")
+
 
 if __name__ == "__main__":
-    # Sample data
-    temperature_values = [1, 100, 300, -1, 400]
-
-    # Validate and create NumPy array
-    my_validated_temps = Temperature.validate_array(temperature_values)
-    print("NumPy array from array validation:")
-    print(my_validated_temps)
-
-    # Validate a single value
-    single_temp = Temperature.validate_single(100)
-    if single_temp is not None:
-        print(f"Validated single temperature value: {single_temp}")
-
-    # Use factory function to create a Temperature instance
-    temp_instance = Temperature.create_temperature(100)
-    if temp_instance:
-        print(f"Temperature instance created with value: {temp_instance.value}")
-
-    ## To do: Function to validate an array, list or single value of temperature and return the same object after validation. Type checking at output to match the input type. 
-
-    
+    main()
