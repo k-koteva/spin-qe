@@ -127,6 +127,29 @@ class Cryo(BaseModel):
         logger.info(f"Total heat should be equal to power: {total_heat}")
         return total_heat
 
+    def calculate_input_power(self, power_at_Tq: float) -> float:
+        """
+        Calculate the input power required to deliver a specific power at Tq,
+        considering the attenuations from the top stage to just before Tq.
+        """
+        # Find the index of the stage where Tq is located
+        tq_index = self.stages.index[self.stages['temps'] == self.Tq].tolist()
+        if not tq_index:
+            raise ValueError(f"No stage found for Tq temperature {self.Tq}.")
+
+        # Sum attenuations from the top stage to just before the Tq
+        # Exclude the attenuation at the Tq stage itself
+        summed_attenuation = self.stages.loc[:tq_index[0] - 1, 'attens'].sum()
+        attenuation_fraction = Atten.val(
+            dB=summed_attenuation, convert_to='frac')
+        assert isinstance(attenuation_fraction,
+                          float), "attenuation_fraction must be a float"
+        # Calculate the input power
+        input_power = power_at_Tq / attenuation_fraction
+
+        logger.info(f"Calculated input power: {input_power}")
+        return input_power
+
     def power_to_evacuate_heat_at_stage(self, temp: float, power: float) -> float:
         efficiency = self.eff(temp)
         heat_at_stage = self.heat_evacuated_at_stage(temp, power)
@@ -275,8 +298,20 @@ def main():
     # attens = [10, 3, 0.0001]
     Si_abs_range = np.linspace(0.0001, 0.01, 100)
 
-    plot_total_power_vs_Si_abs_and_Tq(Tq_values, temps, attens, Si_abs_range)
+    # plot_total_power_vs_Si_abs_and_Tq(Tq_values, temps, attens, Si_abs_range)
     # plot_heat_per_stage_vs_Si_abs(Tq, temps, attens, Si_abs_range)
+
+    # function to test the input power calculation
+    power_at_Tq = 1.0  # in Watts (or any consistent unit)
+
+    # Create an instance of Cryo
+    cryo_instance = Cryo(Tq=Tq, temps=temps, attens=attens)
+
+    # Calculate the input power required
+    input_power = cryo_instance.calculate_input_power(power_at_Tq)
+
+    print(
+        f"Input power required to deliver {power_at_Tq}W at Tq ({Tq}K): {input_power}W")
 
     # Example usage:
     # cryo_instance1 = Cryo(
