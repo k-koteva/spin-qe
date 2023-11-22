@@ -75,7 +75,7 @@ class SpinQubit(BaseModel):
         # to import from qs_energetics
         return 0.999
 
-    def fid_circ(self, num_1q_gates: int, num_2q_gates: int, num_meas: int) -> float:
+    def fid_circ(self, num_1q_gates: int, num_2q_gates: int, num_meas: int = 0) -> float:
         """
         Calculate the total fidelity based on the number of 1q gates, 2q gates, and measurements.
 

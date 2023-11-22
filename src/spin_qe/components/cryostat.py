@@ -53,12 +53,12 @@ class Cryo(BaseModel):
 
         # Add Tq: Si_abs as a key-value pair
         zipped_dict[Tq] = si_abs
-        logger.critical(f"Chip attenuation: {si_abs}")
+        # logger.critical(f"Chip attenuation: {si_abs}")
 
         if zipped_dict.get(300, 0) != 0:
 
             zipped_dict[300] = 0
-            logger.info("Room temperature attenuation set to 0.")
+            # logger.info("Room temperature attenuation set to 0.")
 
         # Sort keys and create the desired list
         sorted_keys = sorted(zipped_dict.keys(), reverse=True)
@@ -124,7 +124,7 @@ class Cryo(BaseModel):
         for temp in self.stages['temps'].unique():
             new_heat = self.heat_evacuated_at_stage(temp=temp, power=power)
             total_heat += new_heat
-        logger.info(f"Total heat should be equal to power: {total_heat}")
+        # logger.info(f"Total heat should be equal to power: {total_heat}")
         return total_heat
 
     def calculate_input_power(self, power_at_Tq: float) -> float:
@@ -147,7 +147,7 @@ class Cryo(BaseModel):
         # Calculate the input power
         input_power = power_at_Tq / attenuation_fraction
 
-        logger.info(f"Calculated input power: {input_power}")
+        # logger.info(f"Calculated input power: {input_power}")
         return input_power
 
     def power_to_evacuate_heat_at_stage(self, temp: float, power: float) -> float:
@@ -241,10 +241,10 @@ def plot_total_power_vs_Si_abs_and_Tq(
             # Use the calculated power only if it's higher than the minimum power
             if calculated_power >= reference_power:
                 total_powers.append(calculated_power)
-                logger.info('Calculated power used')
+                # logger.info('Calculated power used')
             else:
                 total_powers.append(reference_power)
-                logger.info('Minimum power used')
+                # logger.info('Minimum power used')
 
         W_list = Power.val(mW=total_powers,  # pylint: disable=invalid-name
                            convert_to='W')
