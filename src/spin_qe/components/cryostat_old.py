@@ -19,9 +19,7 @@ class Cryo(BaseModel):
     attens: List[float]
     Si_abs: Optional[float] = Field(0, ge=0, le=1)
     stages: DataFrame = DataFrame()
-    # efficiency: str = 'Small System'
     efficiency: str = 'Carnot'
-    cables_atten: float = Field(0, ge=0)
 
     @validator("Tq", pre=True, always=True)
     def validate_Tq(cls, value):  # pylint: disable=no-self-argument
@@ -41,26 +39,10 @@ class Cryo(BaseModel):
         attens = values.get('attens')
         Tq = values.get('Tq')
         Si_abs = values.get('Si_abs')
-        cables_atten = values.get('cables_atten', 30)
-        logger.info(f"cables_atten: {cables_atten}")
 
         if len(temps) != len(attens):
             raise ValueError(
                 "Length of temperatures and attenuations must match.")
-        # Check if 300 degrees stage is already included
-        include_300_stage = 300 not in temps
-
-        # Add 0 attenuation for 300 degrees stage if not included
-        if include_300_stage:
-            temps.append(300)
-            attens.append(0)
-
-        # Calculate equal additional attenuation for each stage
-        num_stages = len(temps)
-        equal_additional_attenuation = cables_atten / (num_stages)
-
-        # Add equal additional attenuation to each existing attenuation
-        attens = [atten + equal_additional_attenuation for atten in attens]
 
         zipped_dict = {temp: atten for temp, atten in zip(temps, attens)}
 
@@ -70,8 +52,13 @@ class Cryo(BaseModel):
         si_abs = round(Atten.val(frac=(1 - Si_abs), convert_to='dB'), 5)
 
         # Add Tq: Si_abs as a key-value pair
-        zipped_dict[Tq] = si_abs + equal_additional_attenuation/100
+        zipped_dict[Tq] = si_abs
         # logger.critical(f"Chip attenuation: {si_abs}")
+
+        if zipped_dict.get(300, 0) != 0:
+
+            zipped_dict[300] = 0
+            # logger.info("Room temperature attenuation set to 0.")
 
         # Sort keys and create the desired list
         sorted_keys = sorted(zipped_dict.keys(), reverse=True)
@@ -79,25 +66,19 @@ class Cryo(BaseModel):
 
         # Create values list based on the final_list
         values_list = [zipped_dict[temp] for temp in final_list]
+
         # Create DataFrame
         df = DataFrame({
             'temps': final_list,
             'attens': values_list
         })
-        logger.info(f"Stages: {df}")
 
         return df
-    
-
 
     def eff(self, stage_T: float):
-        if self.efficiency == 'Carnot':
-            specific_power = (300 - stage_T) / stage_T
-        elif self.efficiency == 'Small System':
-            specific_power = calculate_specific_power(stage_T)
-        else:        
+        if self.efficiency != 'Carnot':
             raise ValueError("Unknown efficiency")
-        return specific_power
+        return (300 - stage_T) / stage_T
 
     def heat_evacuated_at_stage(self, temp: float, power: float) -> float:
         if temp == 300:
@@ -220,18 +201,13 @@ def overlay_heat_evacuated_plots(cryo_instances, power):
     plt.legend()
     plt.show()
 
-def calculate_specific_power(temp: Union[int, float]) -> float:
-    # k = 236236.0  # coefficient from the logarithmic fit
-    k = 3.24*1e5 
-    efficiency = k * (1-temp/300) * (temp ** (-2))
-    return efficiency
 
 def plot_total_power_vs_Si_abs_and_Tq(
     Tq_values: List[float],
     temps: List[float],
     attens: List[float],
     Si_abs_range: List[float],
-    input_power: float = 1.0,
+    input_power: float = 10.0,
     save_dir: Optional[Union[Path, str]] = None
 ) -> None:
     plt.figure(figsize=(10, 6))
@@ -245,8 +221,7 @@ def plot_total_power_vs_Si_abs_and_Tq(
                 Tq=Tq,
                 temps=temps,
                 attens=attens,
-                Si_abs=0.0,
-                cables_atten = 30
+                Si_abs=0.0
             )
 
             # Calculate reference power with Si_abs=0.0
@@ -257,8 +232,7 @@ def plot_total_power_vs_Si_abs_and_Tq(
                 Tq=Tq,
                 temps=temps,
                 attens=attens,
-                Si_abs=Si_abs,
-                cables_atten = 30
+                Si_abs=Si_abs
             )
 
             # Calculate power with the provided Si_abs
@@ -312,7 +286,7 @@ def main():
     # Tq = 0.04
     # temps = [4]
     # attens = [2]
-    Si_abs_range = np.linspace(0.01, 0.99, 100)
+    # Si_abs_range = np.linspace(0.01, 0.99, 100)
 
     # plot_total_power_vs_Si_abs(Tq, temps, attens, Si_abs_range)
 
@@ -322,29 +296,16 @@ def main():
     attens = [3.01]
     # temps = [4, 0.8, 0.1]
     # attens = [10, 3, 0.0001]
-    # Si_abs_range = np.linspace(0.0001, 0.01, 100)
+    Si_abs_range = np.linspace(0.0001, 0.01, 100)
 
     plot_total_power_vs_Si_abs_and_Tq(Tq_values, temps, attens, Si_abs_range)
     # plot_heat_per_stage_vs_Si_abs(Tq, temps, attens, Si_abs_range)
 
     # function to test the input power calculation
-    power_at_Tq = 0.5e-3 # in Watts (or any consistent unit)
-    cables_atten = 30
+    power_at_Tq = 1.0  # in Watts (or any consistent unit)
+
     # Create an instance of Cryo
-    # cryo_instance = Cryo(Tq=Tq, temps=temps, attens=attens, Si_abs=0, cables_atten=cables_atten)
-    cryo_instance = Cryo(Tq=0.02, temps=[4], attens=[3.01], Si_abs=0, cables_atten=30)
-
-    print(f"Cables attenuation: {cryo_instance.cables_atten}dB")
-
-    # Calculate the input power required
-    input_power = cryo_instance.calculate_input_power(power_at_Tq)
-
-    print(
-        f"Input power required to deliver {power_at_Tq}W at Tq ({Tq}K): {input_power}W")
-    
-    cryo_instance = Cryo(Tq=0.02, temps=[4], attens=[3.01], Si_abs=0.5, cables_atten=30)
-
-    print(f"Cables attenuation: {cryo_instance.cables_atten}dB")
+    cryo_instance = Cryo(Tq=Tq, temps=temps, attens=attens)
 
     # Calculate the input power required
     input_power = cryo_instance.calculate_input_power(power_at_Tq)

@@ -20,7 +20,7 @@ class SpinQubit(BaseModel):
     stages_ts: List[float] = []
     silicon_abs: float = confloat(ge=0.0, le=1.0)
     gate_t: Optional[float] = None  # Initialize as None
-    gamma: float = Field(default_factory=lambda: 0.58 * 1e-8)
+    gamma: float = Field(default_factory=lambda: 1.1 * 1e-5)
     cryostat: Optional[Cryo] = None  # Initialize as None
 
     @root_validator(pre=True, skip_on_failure=True)
