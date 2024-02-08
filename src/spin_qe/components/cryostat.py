@@ -21,7 +21,7 @@ class Cryo(BaseModel):
     stages: DataFrame = DataFrame()
     # efficiency: str = 'Small System'
     efficiency: str = 'Carnot'
-    cables_atten: float = Field(0, ge=0)
+    cables_atten: float = Field(30, ge=0)
 
     @validator("Tq", pre=True, always=True)
     def validate_Tq(cls, value):  # pylint: disable=no-self-argument

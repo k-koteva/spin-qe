@@ -18,7 +18,7 @@ def test_make_raises_exception():
         Atten.make(dB=10, perc=20)
 
 
-def test_val_single_float():
+def test_val_single_float1():
     dB_val = Atten.val(dB=10)
     assert dB_val == 10
 
@@ -44,10 +44,11 @@ def test_val_convert_list():
 
 
 def test_val_none_input():
-    none_val = Atten.val()
-    assert none_val is None
+    with pytest.raises(ValueError) as exc_info:
+        Atten.val()
+    assert str(exc_info.value) == "At least one of dB, perc, or frac must be provided."
 
 
 def test_val_invalid_input():
     with pytest.raises(ValueError):
-        Atten.val(dB="invalid")
+        Atten.val(dB="invalid") # noqa
