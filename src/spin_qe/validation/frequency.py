@@ -54,11 +54,12 @@ class Frequency(BaseModel):
         return cls(**params)
 
     @classmethod
-    def val(cls, Hz: Optional[Union[None, float, List[float]]] = None,
-            kHz: Optional[Union[None, float, List[float]]] = None,
-            MHz: Optional[Union[None, float, List[float]]] = None,
-            GHz: Optional[Union[None, float, List[float]]] = None,
-            convert_to: Optional[str] = None) -> Union[None, float, List[float]]:
+    
+    def val(cls, Hz: Optional[Union[None, float, List[float], List[List[float]]]] = None,
+            kHz: Optional[Union[None, float, List[float], List[List[float]]]] = None,
+            MHz: Optional[Union[None, float, List[float], List[List[float]]]] = None,
+            GHz: Optional[Union[None, float, List[float], List[List[float]]]] = None,
+            convert_to: Optional[str] = None) -> Union[None, float, List[float], List[List[float]]]:
 
         if Hz is None and kHz is None and MHz is None and GHz is None:
             return None
@@ -87,8 +88,17 @@ class Frequency(BaseModel):
                     convert_to=convert_to
                 ) for v in value
             ]
-            return [val for sublist in validated_values for val in (sublist if isinstance(sublist, list) else [sublist]) if val is not None]
+            validated_values = [val for sublist in validated_values for val in (sublist if isinstance(sublist, list) else [sublist])]
 
+            # If the original input was a list of lists, wrap the result in another list
+            if isinstance(value, list) and any(isinstance(subvalue, list) for subvalue in value):
+                # Flatten the list only one level and ensure all elements are floats, not lists or None
+                flattened_values = [item for sublist in validated_values for item in (sublist if isinstance(sublist, list) else [sublist]) if item is not None]
+                return flattened_values
+            else:
+            # Ensure all elements are floats
+                validated_values = [float(val) for sublist in validated_values for val in (sublist if isinstance(sublist, list) else [sublist]) if val is not None]
+                return validated_values
         raise ValueError("Invalid input type.")
     
 def main():  # pragma: no cover

@@ -99,7 +99,7 @@ class Power(BaseModel):
         raise ValueError("Invalid input type.")
 
 
-def main():
+def main():  # pragma: no cover
     # Using make factory method
     power_instance = Power.make(mW=5000)
     logger.info(

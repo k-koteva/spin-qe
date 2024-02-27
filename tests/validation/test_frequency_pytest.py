@@ -31,7 +31,7 @@ def test_val_list_float():
 
 def test_val_invalid_input_type():
     with pytest.raises(ValueError):
-        Frequency.val(Hz="string")
+        Frequency.val(Hz="string") # type: ignore
 
 def test_val_invalid_convert_to():
     with pytest.raises(ValueError):
@@ -55,7 +55,7 @@ def test_val_edge_cases():
 
 def test_val_nested_list():
     nested_list = [[1500, 2000], [2500, 3000]]
-    converted = Frequency.val(Hz=nested_list)
+    converted = Frequency.val(Hz=nested_list)  # type: ignore
     assert converted == [1500, 2000, 2500, 3000]
 
     nested_list = [[1.5, 2], [2.5, 3]]

@@ -31,7 +31,7 @@ def test_val_list_float():
 
 def test_val_invalid_input_type():
     with pytest.raises(ValueError):
-        Power.val(mW="string")
+        Power.val(mW="string") # type: ignore
 
 
 def test_val_invalid_convert_to():
@@ -56,13 +56,37 @@ def test_val_edge_cases():
 
 def test_val_nested_list():
     nested_list = [[5000, 6000], [7000, 8000]]
-    converted = Power.val(mW=nested_list)
+    converted = Power.val(mW=nested_list) # type: ignore
     assert converted == [5000, 6000, 7000, 8000]
 
     nested_list = [[5, 6], [7, 8]]
-    converted = Power.val(W=nested_list, convert_to='mW')
+    converted = Power.val(W=nested_list, convert_to='mW') # type: ignore
     assert converted == [5000, 6000, 7000, 8000]
 
     nested_list = [[0.005, 0.006], [0.007, 0.008]]
-    converted = Power.val(kW=nested_list, convert_to='mW')
+    converted = Power.val(kW=nested_list, convert_to='mW') # type: ignore
     assert converted == [5000, 6000, 7000, 8000]
+
+def test_power_init_no_parameters():
+    with pytest.raises(ValueError) as e:
+        Power()
+    assert str(e.value) == "Exactly one of mW, W, or kW must be provided."
+
+def test_power_init_multiple_parameters():
+    with pytest.raises(ValueError) as e:
+        Power(mW=1000, W=1)
+    assert str(e.value) == "Exactly one of mW, W, or kW must be provided."
+
+def test_power_make_with_mW():
+    power_instance = Power.make(mW=1000)
+    assert power_instance.mW == 1000
+
+def test_power_make_with_kW():
+    power_instance = Power.make(kW=1)
+    assert power_instance.kW == 1
+    # Verify the correct conversion logic, if applicable.
+
+
+def test_power_make_with_W():
+    power_instance = Power.make(W=1000)
+    assert power_instance.W == 1000

@@ -85,7 +85,7 @@ class Temp(BaseModel):
 # Example usage
 
 
-def main():
+def main():  # pragma: no cover
     # Using make factory method
     temp_instance = Temp.make(K=100)
     logger.info(
