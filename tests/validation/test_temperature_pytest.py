@@ -33,7 +33,18 @@ def test_val_list_float():
 
 def test_val_invalid_input_type():
     with pytest.raises(ValueError):
-        Temp.val(K="string")
+        Temp.val(K="string") # type: ignore
+
+
+def test_temp_init_no_parameters():
+    with pytest.raises(ValueError) as e:
+        Temp()
+    assert str(e.value) == "Exactly one of K or mK must be provided."
+
+def test_temp_init_multiple_parameters():
+    with pytest.raises(ValueError) as e:
+        Temp(K=100, mK=100000)
+    assert str(e.value) == "Exactly one of K or mK must be provided."
 
 
 def test_val_invalid_convert_to():
@@ -55,3 +66,8 @@ def test_val_edge_cases():
         Temp.val(mK=0)
     with pytest.raises(ValueError):
         Temp.val(mK=300001)
+
+def test_temp_make_with_mK():
+    temp_instance = Temp.make(mK=273000)
+    assert temp_instance.mK == 273000
+    assert temp_instance.K == 273  # Verifying the conversion
