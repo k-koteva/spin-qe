@@ -13,6 +13,10 @@ class DataPoint(BaseModel):
     x: float
     y: float
 
+class DataArray(BaseModel):
+    x: float
+    y: List
+
 def fit_polynomial(data_points: List[DataPoint], degree: int = 3) -> Polynomial:
     x_values = [point.x for point in data_points]
     y_values = [point.y for point in data_points]
@@ -41,13 +45,13 @@ data_points = [
 ]
 
 data_points_fidelity = [
-    DataPoint(x=0.13595473785487275, y=99.88513496455832),
-    DataPoint(x=0.3974260941764538, y=99.87824353928882),
-    DataPoint(x=0.5983893453314294, y=99.86153839680675),
-    DataPoint(x=0.7978210439802411, y=99.85089326537656),
-    DataPoint(x=0.9976970611583134, y=99.80947907579504),
-    DataPoint(x=1.0977326851818083, y=99.782012112168),
-    DataPoint(x=1.199454699986816, y=99.73776258692122),
+    DataPoint(x=0.13595473785487275, y=100-99.88513496455832),
+    DataPoint(x=0.3974260941764538, y=100-99.87824353928882),
+    DataPoint(x=0.5983893453314294, y=100-99.86153839680675),
+    DataPoint(x=0.7978210439802411, y=100-99.85089326537656),
+    DataPoint(x=0.9976970611583134, y=100-99.80947907579504),
+    DataPoint(x=1.0977326851818083, y=100-99.782012112168),
+    DataPoint(x=1.199454699986816, y=100-99.73776258692122),
 ]
 
 # Fit the polynomial with a degree of 3 (cubic) as a starting point
@@ -91,13 +95,68 @@ def plot_data(data_points: List[DataPoint], simulation_data: List[DataPoint]):
     # Plot original data points
     plt.scatter(x_values_data, y_values_data, color='blue', label='Experimental Data')
     plt.scatter(x_values_simulation, y_values_simulation, color='green', label='Model Predictions')
-    plt.ylim(99.72, 100)
+    # plt.ylim(99.72, 100)
     
     plt.xlabel('Temperature of the qubit (K)')
     plt.ylabel('Single Qubit Fidelity (%)')
     plt.title('Fidelity of a spin qubit at 1.44 MHz Rabi frequency')
     plt.legend()
-    plt.savefig('fidelity_simple.pdf', format='pdf')
+    plt.savefig('fidelity_update.pdf', format='pdf')
+    plt.show()
+
+def plot_more_data(data_points: List[DataPoint], simulation_data: List[DataPoint], simulation_data_noisy: List[DataPoint]):
+    # Extract x and y values from data points
+    x_values_data = [point.x for point in data_points]
+    y_values_data = [point.y for point in data_points]
+    
+    x_values_simulation = [point.x for point in simulation_data]
+    y_values_simulation = [point.y for point in simulation_data]
+
+    x_values_simulation_noisy = [point.x for point in simulation_data_noisy]
+    y_values_simulation_noisy = [point.y for point in simulation_data_noisy]
+    
+    
+    # Plot original data points
+    plt.scatter(x_values_data, y_values_data, color='blue', label='Experimental Data')
+    plt.scatter(x_values_simulation_noisy, y_values_simulation_noisy, color='red', label='Noisy Model Predictions')
+    plt.scatter(x_values_simulation, y_values_simulation, color='green', label='Model Predictions')
+    # plt.ylim(99.72, 100)
+    
+    plt.xlabel('Temperature of the qubit (K)')
+    plt.ylabel('Single Qubit Fidelity (%)')
+    plt.title('Fidelity of a spin qubit at 1.44 MHz Rabi frequency')
+    plt.legend()
+    plt.savefig('fidelity_update.pdf', format='pdf')
+    plt.show()
+
+def plot_noisy_data(data_points: List[DataPoint], simulation_data: List[DataPoint], simulation_dataarray_noisy: List[DataArray]):
+    # Extract x and y values from data points
+    x_values_data = [point.x for point in data_points]
+    y_values_data = [point.y for point in data_points]
+    
+    x_values_simulation = [point.x for point in simulation_data]
+    y_values_simulation = [point.y for point in simulation_data]
+    
+    for point in simulation_dataarray_noisy:
+        x_values_simulation_noisy = point.x
+        print(f'x_value: {x_values_simulation_noisy}')
+        y_values_simulation_noisy = point.y
+        print(f'y_value: {y_values_simulation_noisy}')
+        for y_value in y_values_simulation_noisy:
+            plt.scatter(x_values_simulation_noisy, 100-y_value, color='red')
+        plt.scatter(x_values_simulation_noisy, 100-np.mean(y_values_simulation_noisy), color='black')
+    
+    # Plot original data points
+    plt.scatter(x_values_data, y_values_data, color='blue', label='Experimental Data')
+    plt.scatter(x_values_simulation, y_values_simulation, color='green', label='Model Predictions')
+    # plt.ylim(99.72, 100)
+    plt.yscale('log')
+    
+    plt.xlabel('Temperature of the qubit (K)')
+    plt.ylabel('Single Qubit Fidelity (%)')
+    plt.title('Fidelity of a spin qubit at 1.44 MHz Rabi frequency')
+    plt.legend()
+    plt.savefig('fidelity_update.pdf', format='pdf')
     plt.show()
 
 
@@ -127,12 +186,15 @@ def main():
 
     fidelities = []
     sim_data = []
-    temperatures = np.linspace(0.01, 1.4, 100)
+    noisy_sim_data = []
+    noisy_sim_dataarray = []
+    temperatures = np.linspace(0.01, 1.4, 10)
     for temp in temperatures:
         spin_qubit_params = {
             'n_q': 1,
             'Tq': temp,
             'f': 11.20,
+            'f_in_GHz':11.20e9,
             'rabi_in_MHz': 1.44e6,
             'rabi': 1.44,
             'atts_list': [3, 0],
@@ -140,24 +202,31 @@ def main():
             'silicon_abs': 0.0
         }
         spin_qubit = SpinQubit(**spin_qubit_params)
-        fidelities.append(spin_qubit.fid_1q())
+        # fidelities.append(spin_qubit.fid_1q())
+
         # sim_data.append(DataPoint(x=temp, y=spin_qubit.T2HQ()))
         # sim_data.append(DataPoint(x=temp, y=spin_qubit.T2Q()))
-        sim_data.append(DataPoint(x=temp, y=spin_qubit.fid_1q()*100))
+        sim_data.append(DataPoint(x=temp, y=100-spin_qubit.fid_1q()*100))
+        # noisy_sim_data.append(DataPoint(x=temp, y=spin_qubit.noiseFid()*100))
+        noisy_sim_dataarray.append(DataArray(x=temp, y=spin_qubit.noiseFidarray()))
 
-        def fid_1q(T2) -> float:
-            T2 = spin_qubit.T2Q()
-            rabi = spin_qubit.rabi
-            print(f"rabi: {rabi}")
-            logger.info(f"rabi: {rabi}")
-            delta = 1/T2
-            prob = 1 - (np.pi+1)*delta**2/(4*rabi**2)
-            return prob
-        my_fid_1q = fid_1q(spin_qubit.T2Q())
-        logger.warning(f"FIDELITY: {my_fid_1q}")
 
+        # def fid_1q(T2) -> float:
+        #     T2 = spin_qubit.T2Q()
+        #     rabi = spin_qubit.rabi
+        #     print(f"rabi: {rabi}")
+        #     logger.info(f"rabi: {rabi}")
+        #     delta = 1/T2
+        #     prob = 1 - (np.pi+1)*delta**2/(4*rabi**2)
+        #     return prob
+        # my_fid_1q = fid_1q(spin_qubit.T2Q())
+        # logger.warning(f"FIDELITY: {my_fid_1q}")
+
+    # print(sim_data)
     # plot_data(data_points, sim_data)
-    plot_data(data_points_fidelity, sim_data)
+    # plot_data(data_points_fidelity, sim_data)
+    # plot_more_data(data_points_fidelity, sim_data, noisy_sim_data)
+    plot_noisy_data(data_points_fidelity, sim_data, noisy_sim_dataarray)
     # logger.info(spin_qubit.T2HQ())
     # logger.info(spin_qubit.T2Q())
 

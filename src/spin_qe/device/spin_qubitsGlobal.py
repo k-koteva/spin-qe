@@ -22,7 +22,7 @@ class SpinQubit(BaseModel):
     gate_t: Optional[float] = None  # Initialize as None
     gamma: float = Field(default_factory=lambda: 1.1 * 1e-5)
     cryostat: Optional[Cryo] = None  # Initialize as None
-    echo: Optional[bool] = False # Initialize as None
+    echo: Optional[bool] = True # Initialize as None
 
     @root_validator(pre=True, skip_on_failure=True)
     def calculate_gate_t_and_gamma(cls, values):
@@ -71,11 +71,60 @@ class SpinQubit(BaseModel):
         poly = Polynomial(coefs)
         print('Hanh')
         return poly(self.Tq)*1e-6
+    
+    def noiseFid(self, T2='nan', numiter=100) -> float:
+        if T2=='nan':
+            T2=self.T2HQ()
+            print(f"T2 noisy: {T2}")
+        else:
+            T2 = float(T2)
+        if T2 <= 0:
+            T2 = 1e-20  # Set a small positive value for T2 to avoid division by zero or negative scale
+        noise = np.random.normal(loc=self.f, scale=(1/T2), size=numiter)
+        print(f"Friquency: {self.f}")
+        print(f"Drive: {noise}")
+        fids = []
+        for n in noise:
+            print()
+            print(f"fidelity: {self.FidQ(n)}")
+            fids.append(self.FidQ(n))
+        return np.mean(fids)
+    
+    def noiseFidarray(self, T2='nan', numiter=100) -> List:
+        if T2=='nan':
+            T2=self.T2HQ()
+            print(f"T2 noisy: {T2}")
+        else:
+            T2 = float(T2)
+        if T2 <= 0:
+            T2 = 1e-20  # Set a small positive value for T2 to avoid division by zero or negative scale
+        noise = np.random.normal(loc=self.f, scale=(1/T2), size=numiter)
+        print(f"Friquency: {self.f}")
+        print(f"Drive: {noise}")
+        fids = []
+        for n in noise:
+            print()
+            print(f"fidelity: {self.FidQ(n)}")
+            fids.append(self.FidQ(n)*100)
+        return fids
+    
+    def FidQ(self, drive):
+    # [rabi] = kHz, [B] = GH, [pert] = GHz, [time] = microsec
+        time = np.pi/(2*self.rabi)
+        rabi = self.rabi
+        print(f"given f: {self.f}")
+        delta = self.f - drive
+        print(f"delta: {delta}")
+        sq = (rabi)**2 + (delta)**2
+        print(f"sq: {sq}")
+        prob = ((rabi**2)*np.sin(time*np.sqrt(sq))**2)/sq
+        return prob
 
     def fid_1q(self, T2='nan') -> float:
         if T2 == 'nan':
             if self.echo:
                 T2 = self.T2HQ()
+                print(f"T2 echo: {T2}")
             else:
                 T2 = self.T2Q()
         # T2 = (self.T2Q()+self.T2HQ())/2

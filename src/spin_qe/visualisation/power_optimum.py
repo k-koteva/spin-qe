@@ -64,7 +64,7 @@ def main():
     plt.xlabel('Temp')
     plt.ylabel('Cryo power')
     plt.legend()
-    plt.savefig('power_vs_temp.pdf', format='pdf')
+    plt.savefig('power_vs_tempSS.pdf', format='pdf')
     plt.show()
 
     # Example usage

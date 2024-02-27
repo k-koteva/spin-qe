@@ -19,8 +19,8 @@ class Cryo(BaseModel):
     attens: List[float]
     Si_abs: Optional[float] = Field(0, ge=0, le=1)
     stages: DataFrame = DataFrame()
-    # efficiency: str = 'Small System'
-    efficiency: str = 'Carnot'
+    efficiency: str = 'Small System'
+    # efficiency: str = 'Carnot'
     cables_atten: float = Field(30, ge=0)
 
     @validator("Tq", pre=True, always=True)
