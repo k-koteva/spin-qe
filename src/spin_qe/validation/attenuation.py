@@ -97,7 +97,7 @@ class Atten(BaseModel):
             raise ValueError("Invalid input type.")
 
 
-def main():
+def main():  # pragma: no cover
     # Using make factory method
     atten_instance = Atten.make(dB=10)
     logger.info(
