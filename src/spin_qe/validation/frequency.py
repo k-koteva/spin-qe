@@ -91,7 +91,7 @@ class Frequency(BaseModel):
 
         raise ValueError("Invalid input type.")
     
-def main():
+def main():  # pragma: no cover
     # Using make factory method
     frequency_instance = Frequency.make(Hz=1500)
     print(

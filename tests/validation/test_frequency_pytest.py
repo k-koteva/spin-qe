@@ -69,3 +69,28 @@ def test_val_nested_list():
     nested_list = [[0.0000015, 0.000002], [0.0000025, 0.000003]]
     converted = Frequency.val(GHz=nested_list, convert_to='Hz')
     assert converted == [1500, 2000, 2500, 3000]
+
+def test_frequency_init_no_parameters():
+    with pytest.raises(ValueError) as e:
+        Frequency()
+    assert str(e.value) == "Exactly one of Hz, kHz, MHz, or GHz must be provided."
+
+def test_frequency_init_multiple_parameters():
+    with pytest.raises(ValueError) as e:
+        Frequency(Hz=1000, kHz=1)
+    assert str(e.value) == "Exactly one of Hz, kHz, MHz, or GHz must be provided."
+
+def test_frequency_make_with_kHz():
+    freq_instance = Frequency.make(kHz=1)
+    assert freq_instance.kHz == 1
+    # Additional assertions can validate automatic conversion logic, if applicable.
+
+def test_frequency_make_with_MHz():
+    freq_instance = Frequency.make(MHz=1)
+    assert freq_instance.MHz == 1
+    # Validate conversions if your class logic does so.
+
+def test_frequency_make_with_GHz():
+    freq_instance = Frequency.make(GHz=1)
+    assert freq_instance.GHz == 1
+    # Include conversion validation as needed.
