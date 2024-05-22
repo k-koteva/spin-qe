@@ -13,25 +13,45 @@ from spin_qe.components.cryostat import Cryo
 
 
 class SpinQubit(BaseModel):
-    n_q: int = conint(ge=1, le=10000000)
-    Tq: float = confloat(gt=0.0, le=300)
-    f: float = Field(39.33e9, alias='f_in_GHz')
-    rabi: float = Field(0.5e6, alias='rabi_in_MHz')
+    n_q: int = Field(default=1, ge=1, le=10000000)
+    Tq: float = Field(..., gt=0.0, le=300)
+    rabi_in_MHz: float = Field(..., gt=0.0)
+    rabi: float = Field(..., gt=0.0)  # This will be set in the validator
+    f_in_GHz: float = Field(..., gt=0.0)   # Input in GHz
+    f: float = Field(..., gt=0.0) 
     atts_list: List[float] = []
     stages_ts: List[float] = []
-    silicon_abs: float = confloat(ge=0.0, le=1.0)
+    silicon_abs: float = Field(default=0.0, ge=0, le=1)
     gate_t: Optional[float] = None  # Initialize as None
     gamma: float = Field(default_factory=lambda: 1.1 * 1e-5)
     cryostat: Optional[Cryo] = None  # Initialize as None
-    efficiency: Optional[str] = 'Carnot' # Initialize as None
+    efficiency: Optional[str] = 'Carnot' # Initialize as Carnot
     echo: Optional[bool] = True # Initialize as None
-
-    @root_validator(pre=True, skip_on_failure=True)
-    def calculate_gate_t_and_gamma(cls, values):
+    
+    @root_validator(pre=True)
+    def calculate_gate_t_and_rabi(cls, values):
+        rabi_in_MHz = values.get('rabi_in_MHz')
         rabi = values.get('rabi')
-        if rabi is not None:
-            values['gate_t'] = 1e-6 / (2 * rabi)
+        f_in_GHz = values.get('f_in_GHz')
+        f = values.get('f')
+        
+        # Convert f_in_GHz to f in Hz if provided
+        if f_in_GHz is not None:
+            values['f'] = f_in_GHz * 1e9
+        elif f is not None:
+            values['f'] = f
+        # Convert rabi_in_MHz to rabi in Hz if provided
+        if rabi_in_MHz is not None:
+            values['rabi'] = rabi_in_MHz * 1e6
+        elif rabi is not None:
+            values['rabi'] = rabi
+
+        # Calculate gate_t based on rabi in Hz
+        if values.get('rabi') is not None:
+            logger.info(f"Rabi: {values['rabi']}")
+            values['gate_t'] = 1 / (2 * values['rabi'])
         return values
+    
 
     @root_validator(pre=True)
     def initialize_cryostat(cls, values):
@@ -136,14 +156,16 @@ class SpinQubit(BaseModel):
         prob = ((rabi**2)*np.sin(time*np.sqrt(sq))**2)/sq
         return prob
 
-    def fid_1q(self, T2='nan') -> float:
-        if T2 == 'nan':
+    def fid_1q(self, T2=0) -> float:
+        if T2 == 0:
             if self.echo:
                 T2 = self.T2HQ()
                 print(f"T2 echo: {T2}")
             else:
                 T2 = self.T2Q()
         # T2 = (self.T2Q()+self.T2HQ())/2
+        if T2 <= 0:
+            raise ValueError("T2 must be positive")
         rabi = self.rabi
         print(f"rabi: {rabi}")
         logger.info(f"rabi: {rabi}")
@@ -360,33 +382,33 @@ def main():
     # plot_cables_vs_total_power(example_data)
 
     ### SMALL SYSTEM EFFICIENCY
-    example_data = []
-    temperatures = [0.007, 0.1, 0.8, 4, 50, 300]
-    for number_q in [1,20,30]:
-        for temp in temperatures:
-            spin_qubit_params = {
-                'n_q': number_q,
-                'Tq': temp,
-                'f': 39.33,
-                'rabi_in_MHz': 0.6e6,
-                'rabi': 0.6,
-                'atts_list': [3, 0],
-                'stages_ts': [4, 300],
-                'silicon_abs': 0.0,
-                'efficiency':'Small System'
-            }
-            spin_qubit = SpinQubit(**spin_qubit_params)
-            logger.info(f"Number of qubits: {number_q}")
-            logger.info(f"SpinQubit temp: {spin_qubit_params['Tq']}")
-            logger.info(f"SpinQubit cable_power: {spin_qubit.cables_power()}")
-            logger.info(f"SpinQubit cryo_power: {spin_qubit.cryo_power()}")
-            logger.info(f"SpinQubit total_power: {spin_qubit.total_power()}")
-            example_data.append(StageData(temperature=spin_qubit.Tq, n_q=spin_qubit.n_q, cables_power=spin_qubit.cables_power(), cryo_power=spin_qubit.cryo_power(), total_power=spin_qubit.total_power()))
+    # example_data = []
+    # temperatures = [0.007, 0.1, 0.8, 4, 50, 300]
+    # for number_q in [1,20,30]:
+    #     for temp in temperatures:
+    #         spin_qubit_params = {
+    #             'n_q': number_q,
+    #             'Tq': temp,
+    #             'f': 39.33,
+    #             'rabi_in_MHz': 0.6e6,
+    #             'rabi': 0.6,
+    #             'atts_list': [3, 0],
+    #             'stages_ts': [4, 300],
+    #             'silicon_abs': 0.0,
+    #             'efficiency':'Small System'
+    #         }
+    #         spin_qubit = SpinQubit(**spin_qubit_params)
+    #         logger.info(f"Number of qubits: {number_q}")
+    #         logger.info(f"SpinQubit temp: {spin_qubit_params['Tq']}")
+    #         logger.info(f"SpinQubit cable_power: {spin_qubit.cables_power()}")
+    #         logger.info(f"SpinQubit cryo_power: {spin_qubit.cryo_power()}")
+    #         logger.info(f"SpinQubit total_power: {spin_qubit.total_power()}")
+    #         example_data.append(StageData(temperature=spin_qubit.Tq, n_q=spin_qubit.n_q, cables_power=spin_qubit.cables_power(), cryo_power=spin_qubit.cryo_power(), total_power=spin_qubit.total_power()))
 
-    # Plot the example data with uniform bar widths on a logarithmic scale
-    # plot_cables_vs_total_power(example_data)
+    # # Plot the example data with uniform bar widths on a logarithmic scale
+    # # plot_cables_vs_total_power(example_data)
 
-    plot_cables_vs_total_power_ratio(example_data)
+    # plot_cables_vs_total_power_ratio(example_data)
 
 
 
@@ -399,7 +421,25 @@ def main():
     # plt.grid(True)
     # plt.show()
 
-    
+    spin_qubit_params = {
+                'n_q': 1,
+                'Tq': 0.04,
+                'f': 39.33,
+                'rabi_in_MHz': 0.7,
+                # 'rabi': 0.7e6,
+                'atts_list': [3, 0],
+                'stages_ts': [4, 300],
+                'silicon_abs': 0.0,
+                'efficiency':'Small System'
+            }
+    spin_qubit = SpinQubit(**spin_qubit_params)
+    logger.info(f"Number of qubits: {spin_qubit.n_q}")
+    logger.info(f"SpinQubit temp: {spin_qubit_params['Tq']}")
+    logger.info(f"SpinQubit cable_power: {spin_qubit.cables_power()}")
+    logger.info(f"SpinQubit cryo_power: {spin_qubit.cryo_power()}")
+    logger.info(f"SpinQubit total_power: {spin_qubit.total_power()}")
+    logger.info(f"SpinQubit Rabi: {spin_qubit.rabi}")
+    logger.info(f"SpinQubit Gate Time: {spin_qubit.gate_t}")
 
 
 if __name__ == "__main__":
