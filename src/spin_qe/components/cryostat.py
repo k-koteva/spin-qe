@@ -19,8 +19,8 @@ class Cryo(BaseModel):
     attens: List[float]
     Si_abs: Optional[float] = Field(0, ge=0, le=1)
     stages: DataFrame = DataFrame()
-    efficiency: str = 'Small System'
-    # efficiency: str = 'Carnot'
+    # efficiency: str = 'Small System'
+    efficiency: str = 'Carnot'
     cables_atten: float = Field(30, ge=0)
 
     @validator("Tq", pre=True, always=True)
@@ -42,7 +42,7 @@ class Cryo(BaseModel):
         Tq = values.get('Tq')
         Si_abs = values.get('Si_abs')
         cables_atten = values.get('cables_atten', 30)
-        logger.info(f"cables_atten: {cables_atten}")
+        logger.warning(f"cables_atten: {cables_atten}")
 
         if len(temps) != len(attens):
             raise ValueError(
@@ -66,8 +66,15 @@ class Cryo(BaseModel):
 
         # Remove entries where temperature is lower or equal to Tq
         zipped_dict = {k: v for k, v in zipped_dict.items() if k > Tq}
-
-        si_abs = round(Atten.val(frac=(1 - Si_abs), convert_to='dB'), 5)
+        if isinstance(Si_abs, float):
+            si_abs_value = Atten.val(frac=(1 - Si_abs), convert_to='dB')
+            if isinstance(si_abs_value, (float, int)):  # Ensure it's a numeric type
+                si_abs = round(float(si_abs_value), 2)
+            else:
+                raise TypeError("Expected a numeric type from Atten.val")
+        else:
+            raise TypeError("Si_abs must be a float")
+        # si_abs = round(float(Atten.val(frac=(1 - Si_abs), convert_to='dB')), 2)
 
         # Add Tq: Si_abs as a key-value pair
         zipped_dict[Tq] = si_abs + equal_additional_attenuation/100
@@ -92,11 +99,14 @@ class Cryo(BaseModel):
 
     def eff(self, stage_T: float):
         if self.efficiency == 'Carnot':
+            logger.warning(f"Efficiency: 'Carnot'")
             specific_power = (300 - stage_T) / stage_T
         elif self.efficiency == 'Small System':
+            logger.warning(f"Efficiency: 'Small System'")
             specific_power = calculate_specific_power(stage_T)
         else:        
             raise ValueError("Unknown efficiency")
+        
         return specific_power
 
     def heat_evacuated_at_stage(self, temp: float, power: float) -> float:
@@ -170,6 +180,7 @@ class Cryo(BaseModel):
         return input_power
 
     def power_to_evacuate_heat_at_stage(self, temp: float, power: float) -> float:
+
         efficiency = self.eff(temp)
         heat_at_stage = self.heat_evacuated_at_stage(temp, power)
         return efficiency * heat_at_stage

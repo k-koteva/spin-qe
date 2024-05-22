@@ -20,15 +20,15 @@ class StageData(BaseModel):
             raise ValueError('The length of heat_extracted and power_consumption must be the same')
         return v
 
-temps = [4]
-attens = [3.01]
+temps = [0.007, 0.1, 0.8, 4, 50, 300]
+attens = [20, 20.0, 10, 20, 0.0, 0.0]
 input_power = 1.0
 Tq_values = [0.006, 0.02, 0.04, 0.1, 0.3, 1]
 reference_powersCarnot = []
 reference_powers = []
 example_data = []
 for Tq in Tq_values:
-    cryo = Cryo(Tq=Tq, temps=temps, attens=attens, Si_abs=0.0, cables_atten=30)
+    cryo = Cryo(Tq=Tq, temps=temps, attens=attens, Si_abs=0.0, cables_atten=30, efficiency= 'Carnot')
     reference_powerCarnot = cryo.total_power(power=input_power)
     cryo = Cryo(Tq=Tq, temps=temps, attens=attens, Si_abs=0.0, cables_atten=30, efficiency='Small System')
     reference_power = cryo.total_power(power=input_power)
@@ -68,6 +68,8 @@ def plot_log_data_uniform_bars(data: List[StageData]):
         ax.bar(bar_positions, heat_bars, bar_width * temperatures, align='edge', alpha=opacity, color='b', label='Small System efficiency')
         ax.bar(bar_positions, power_bars, bar_width * temperatures, align='edge', alpha=opacity, color='r', label='Carnot efficiency')
 
+    # ax.legend([f"Temp: {d.temperature}K, Atten: {d.attenuation}dB, Cables Atten: {d.cables_atten}dB" for d in data], loc='upper right')
+
     # Set labels, title, and legend
     ax.set_xlabel('Temperature of qubit / K')
     ax.set_ylabel('Power Consumption / W')
@@ -76,7 +78,7 @@ def plot_log_data_uniform_bars(data: List[StageData]):
     ax.set_yscale('log')
     ax.legend()
 
-    plt.savefig('Cryotat_Consumption.pdf', format='pdf')
+    plt.savefig('Cryotat_Consumption_20_20_10_20_db.svg', format='svg')
     # Show the plot
     plt.show()
 

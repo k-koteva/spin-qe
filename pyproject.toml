@@ -20,6 +20,7 @@ dependencies = [
     "isort>=5.12.0",
     "myqlm>=1.9.5",
     "pyscf>=2.4.0",
+    "sympy>=1.12",
 ]
 requires-python = ">=3.11,<3.13"
 readme = "README.md"
