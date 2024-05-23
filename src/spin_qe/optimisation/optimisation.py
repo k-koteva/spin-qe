@@ -8,7 +8,7 @@ from matplotlib.colors import LogNorm
 import spin_qe.device.spin_qubits as sq
 
 
-def calculate_power_noise(tqb: np.ndarray, rabifreq: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def calculate_power_noise(tqb: np.ndarray, rabifreq: np.ndarray, calculate_energy: bool = True) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     attens = [0, 0, 0, 3, 0, 0]
     stage_ts = [0.007, 0.1, 0.8, 4, 50, 300]
     silicon_abs = 0.01
@@ -17,6 +17,9 @@ def calculate_power_noise(tqb: np.ndarray, rabifreq: np.ndarray) -> Tuple[np.nda
     cryoGrid = np.zeros((len(rabifreq), len(tqb)))
     conductionGrid = np.zeros((len(rabifreq), len(tqb)))
     fidelityGrid = np.zeros((len(rabifreq), len(tqb)))
+    energyGrid = np.zeros((len(rabifreq), len(tqb)))
+    cryoEGrid = np.zeros((len(rabifreq), len(tqb)))
+    conductionEGrid = np.zeros((len(rabifreq), len(tqb)))
 
     for i, rabi in enumerate(rabifreq):
         logger.info(f'Rabi frequency = {rabi}')
@@ -24,14 +27,18 @@ def calculate_power_noise(tqb: np.ndarray, rabifreq: np.ndarray) -> Tuple[np.nda
             logger.info(f'Temperature = {tq}')
             mySQ = sq.SpinQubit(n_q=1, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency='Carnot',
                                 stages_ts=stage_ts, silicon_abs=silicon_abs)
-            powerGrid[i, j] = mySQ.total_power()
             cryoGrid[i, j] = mySQ.cryo_power()
             conductionGrid[i, j] = mySQ.cables_power()
             powerGrid[i, j] = cryoGrid[i, j] + conductionGrid[i, j]
+
+            energyGrid[i, j] = powerGrid[i, j]*mySQ.gate_t
+            cryoEGrid[i, j] = cryoGrid[i, j]*mySQ.gate_t
+            conductionEGrid[i, j] = conductionGrid[i, j]*mySQ.gate_t
+
             fidelityGrid[i, j] = mySQ.fid_1q()
             logger.info(f'fid = {mySQ.fid_1q()}')
 
-    return powerGrid, fidelityGrid, conductionGrid, cryoGrid
+    return powerGrid, fidelityGrid, conductionGrid, cryoGrid, energyGrid, conductionEGrid, cryoEGrid 
 
 def optimize_power_and_efficiency(powerful: np.ndarray, smoothFid: np.ndarray, metric_target: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     opt_power = 1e28 * np.ones(len(metric_target))
@@ -50,10 +57,10 @@ def optimize_power_and_efficiency(powerful: np.ndarray, smoothFid: np.ndarray, m
 
     return opt_power, gate_efficiency
 
-def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: np.ndarray, fid_levels: List[float], power_levels: List[float], filename: str):
+def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: np.ndarray, fid_levels: List[float], power_levels: List[float], filename: str, plot_energy: bool = False):
     mkl_fid = {level: f'${level}$' for level in fid_levels}
     mkl_power = {level: f'${level}$' for level in power_levels}
-
+    label = 'Energy /J' if plot_energy else 'Power /W'
     fig = plt.figure()
     ax0 = fig.gca()
     powerPlot = ax0.pcolor(R, T, powerful, 
@@ -79,7 +86,8 @@ def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: 
     cbar = fig.colorbar(powerPlot, ax=ax0)
     ax0.set_ylabel('Temperature of quantum chip /K', fontsize=14)
     ax0.set_xlabel('Rabi frequency /MHz', fontsize=14)
-    cbar.ax.set_ylabel('Power /W', fontsize=12)
+    
+    cbar.ax.set_ylabel(label, fontsize=12)
     fig.savefig(filename, bbox_inches='tight')
 
 def main():
@@ -87,16 +95,20 @@ def main():
     rabifreq = np.linspace(0.01, 15, 10)
     R, T = np.meshgrid(rabifreq, tqb, indexing='ij')
     
-    powerful, smoothFid, conductionP, cryoP = calculate_power_noise(tqb, rabifreq)
+    powerful, smoothFid, conductionP, cryoP, energyTotal, conductionE, cryoE = calculate_power_noise(tqb, rabifreq)
     
     metric_target = np.linspace(0.90, 0.999, 30)
     opt_power, gate_efficiency = optimize_power_and_efficiency(powerful, smoothFid, metric_target)
     
     fid_levels: List[float] = [0.90, 0.99, 0.997]
     power_levels: List[float] = [1, 10, 30]
+    energy_levels: List[float] = [1e-9, 1e-8, 1e-6]
     plot_results(R, T, powerful, smoothFid, fid_levels, power_levels, 'spinQubit_optimPowSiAbs001realTRIAL_checked.pdf')
     plot_results(R, T, conductionP, smoothFid, fid_levels, power_levels, 'spinQubit_optimPowSiAbs001realTRIAL_checked_conduction.pdf')
     plot_results(R, T, cryoP, smoothFid, fid_levels, power_levels, 'spinQubit_optimPowSiAbs001realTRIAL_checked_cryo.pdf')
+    plot_results(R, T, energyTotal, smoothFid, fid_levels, energy_levels, 'spinQubit_optimPowSiAbs001realTRIAL_checked_energy.pdf', plot_energy=True)
+    plot_results(R, T, conductionE, smoothFid, fid_levels, energy_levels, 'spinQubit_optimPowSiAbs001realTRIAL_checked_conduction_energy.pdf', plot_energy=True)
+    plot_results(R, T, cryoE, smoothFid, fid_levels, energy_levels, 'spinQubit_optimPowSiAbs001realTRIAL_checked_cryo_energy.pdf', plot_energy=True)
 
 if __name__ == "__main__":
     main()

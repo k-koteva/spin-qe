@@ -145,6 +145,7 @@ def main():
     print(f"Total fidelity: {total_fid}")
     logger.info(f"Number of qubits: {spin_qubit.n_q}")
     logger.info(f"Number of cables: {spin_qubit.n_cables()}")
+    logger.info(f"Power in cables: {spin_qubit.cables_power()}")
 
 
 if __name__ == "__main__":
