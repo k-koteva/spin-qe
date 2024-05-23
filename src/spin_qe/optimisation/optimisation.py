@@ -9,8 +9,8 @@ import spin_qe.device.spin_qubits as sq
 
 
 def calculate_power_noise(tqb: np.ndarray, rabifreq: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    attens = [3, 0]
-    stage_ts = [4, 300]
+    attens = [0, 0, 0, 3, 0, 0]
+    stage_ts = [0.007, 0.1, 0.8, 4, 50, 300]
     silicon_abs = 0.01
 
     powerGrid = np.zeros((len(rabifreq), len(tqb)))
@@ -88,7 +88,7 @@ def main():
     opt_power, gate_efficiency = optimize_power_and_efficiency(powerful, smoothFid, metric_target)
     
     fid_levels = [0.90, 0.99, 0.997]
-    power_levels = [1e-3, 10, 30]
+    power_levels = [1, 10, 30]
     plot_results(R, T, powerful, smoothFid, fid_levels, power_levels, 'spinQubit_optimPowSiAbs001realTRIAL_checked.pdf')
 
 if __name__ == "__main__":
