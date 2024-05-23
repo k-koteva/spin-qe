@@ -78,8 +78,8 @@ def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: 
     fig.savefig(filename, bbox_inches='tight')
 
 def main():
-    tqb = np.linspace(0.01, 1, 10)
-    rabifreq = np.linspace(0.01, 15, 10)
+    tqb = np.linspace(0.01, 1, 100)
+    rabifreq = np.linspace(0.01, 15, 100)
     R, T = np.meshgrid(rabifreq, tqb, indexing='ij')
     
     powerful, smoothFid = calculate_power_noise(tqb, rabifreq)
@@ -88,7 +88,7 @@ def main():
     opt_power, gate_efficiency = optimize_power_and_efficiency(powerful, smoothFid, metric_target)
     
     fid_levels = [0.90, 0.99, 0.997]
-    power_levels = [1e-3, 10]
+    power_levels = [1e-3, 10, 15]
     plot_results(R, T, powerful, smoothFid, fid_levels, power_levels, 'spinQubit_optimPowSiAbs001realTRIAL_check.pdf')
 
 if __name__ == "__main__":
