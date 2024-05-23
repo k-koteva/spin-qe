@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,12 +8,14 @@ from matplotlib.colors import LogNorm
 import spin_qe.device.spin_qubits as sq
 
 
-def calculate_power_noise(tqb: np.ndarray, rabifreq: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def calculate_power_noise(tqb: np.ndarray, rabifreq: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     attens = [0, 0, 0, 3, 0, 0]
     stage_ts = [0.007, 0.1, 0.8, 4, 50, 300]
     silicon_abs = 0.01
 
     powerGrid = np.zeros((len(rabifreq), len(tqb)))
+    cryoGrid = np.zeros((len(rabifreq), len(tqb)))
+    conductionGrid = np.zeros((len(rabifreq), len(tqb)))
     fidelityGrid = np.zeros((len(rabifreq), len(tqb)))
 
     for i, rabi in enumerate(rabifreq):
@@ -23,10 +25,13 @@ def calculate_power_noise(tqb: np.ndarray, rabifreq: np.ndarray) -> Tuple[np.nda
             mySQ = sq.SpinQubit(n_q=1, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency='Carnot',
                                 stages_ts=stage_ts, silicon_abs=silicon_abs)
             powerGrid[i, j] = mySQ.total_power()
+            cryoGrid[i, j] = mySQ.cryo_power()
+            conductionGrid[i, j] = mySQ.cables_power()
+            powerGrid[i, j] = cryoGrid[i, j] + conductionGrid[i, j]
             fidelityGrid[i, j] = mySQ.fid_1q()
             logger.info(f'fid = {mySQ.fid_1q()}')
 
-    return powerGrid, fidelityGrid
+    return powerGrid, fidelityGrid, conductionGrid, cryoGrid
 
 def optimize_power_and_efficiency(powerful: np.ndarray, smoothFid: np.ndarray, metric_target: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     opt_power = 1e28 * np.ones(len(metric_target))
@@ -82,14 +87,16 @@ def main():
     rabifreq = np.linspace(0.01, 15, 10)
     R, T = np.meshgrid(rabifreq, tqb, indexing='ij')
     
-    powerful, smoothFid = calculate_power_noise(tqb, rabifreq)
+    powerful, smoothFid, conductionP, cryoP = calculate_power_noise(tqb, rabifreq)
     
     metric_target = np.linspace(0.90, 0.999, 30)
     opt_power, gate_efficiency = optimize_power_and_efficiency(powerful, smoothFid, metric_target)
     
-    fid_levels = [0.90, 0.99, 0.997]
-    power_levels = [1, 10, 30]
+    fid_levels: List[float] = [0.90, 0.99, 0.997]
+    power_levels: List[float] = [1, 10, 30]
     plot_results(R, T, powerful, smoothFid, fid_levels, power_levels, 'spinQubit_optimPowSiAbs001realTRIAL_checked.pdf')
+    plot_results(R, T, conductionP, smoothFid, fid_levels, power_levels, 'spinQubit_optimPowSiAbs001realTRIAL_checked_conduction.pdf')
+    plot_results(R, T, cryoP, smoothFid, fid_levels, power_levels, 'spinQubit_optimPowSiAbs001realTRIAL_checked_cryo.pdf')
 
 if __name__ == "__main__":
     main()
