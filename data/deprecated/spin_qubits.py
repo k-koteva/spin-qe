@@ -6,7 +6,6 @@ from loguru import logger
 from pydantic import BaseModel, Field, confloat, conint, root_validator
 from scipy.constants import h
 
-from spin_qe.components.cables import sum_conduction_power
 from spin_qe.components.cryostat import Cryo
 
 
@@ -21,7 +20,6 @@ class SpinQubit(BaseModel):
     gate_t: Optional[float] = None  # Initialize as None
     gamma: float = Field(default_factory=lambda: 1.1 * 1e-5)
     cryostat: Optional[Cryo] = None  # Initialize as None
-    efficiency: Optional[str] = 'Carnot'
 
     @root_validator(pre=True, skip_on_failure=True)
     def calculate_gate_t_and_gamma(cls, values):
@@ -39,7 +37,7 @@ class SpinQubit(BaseModel):
 
         # Assuming Cryostat class takes these parameters for initialization
         cryostat = Cryo(temps=stages_ts, attens=atts_list,
-                        Tq=Tq, Si_abs=silicon_abs, cables_atten=30, efficiency=values.get('efficiency'))
+                        Tq=Tq, Si_abs=silicon_abs)
         values['cryostat'] = cryostat
         return values
 
@@ -49,26 +47,11 @@ class SpinQubit(BaseModel):
         power = (np.pi**2) * (h * self.f) / (4 * self.gamma * self.gate_t**2)
         return power
 
-    def cryo_power(self) -> float:
+    def total_power(self) -> float:
         power_at_Tq = self.pow_1q()
-        if self.cryostat is None:
-            raise ValueError("cryostat is not set.")
         input_power = self.cryostat.calculate_input_power(power_at_Tq)
         total_power = self.cryostat.total_power(input_power)
         return total_power
-    
-    def n_cables(self) -> int:
-        logger.info(f"n_q: {self.n_q}")
-        logger.info(f"number of cables: {6*self.n_q -1}")
-        return 6*self.n_q -1
-    
-    def cables_power(self) -> float:
-        if self.cryostat is None:
-            raise ValueError("cryostat is not set.")
-        return sum_conduction_power(self.cryostat)*self.n_cables()
-    
-    def total_power(self) -> float:
-        return self.cryo_power() + self.cables_power()
 
     def T2Q(self) -> float:
         return 1.7e-5/(1+9*self.Tq)
@@ -122,8 +105,7 @@ def main():
         'rabi': 0.6,
         'atts_list': [3, 0],
         'stages_ts': [4, 300],
-        'silicon_abs': 0.01,
-        'efficiency': 'Carnot'
+        'silicon_abs': 0.01
     }
 
     # Create a SpinQubit instance
@@ -143,8 +125,6 @@ def main():
     total_fid = spin_qubit.fid_circ(
         num_1q_gates=10, num_2q_gates=5, num_meas=3)
     print(f"Total fidelity: {total_fid}")
-    logger.info(f"Number of qubits: {spin_qubit.n_q}")
-    logger.info(f"Number of cables: {spin_qubit.n_cables()}")
 
 
 if __name__ == "__main__":

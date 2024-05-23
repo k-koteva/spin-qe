@@ -20,7 +20,7 @@ def calculate_power_noise(tqb: np.ndarray, rabifreq: np.ndarray) -> Tuple[np.nda
         logger.info(f'Rabi frequency = {rabi}')
         for j, tq in enumerate(tqb):
             logger.info(f'Temperature = {tq}')
-            mySQ = sq.SpinQubit(Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens,
+            mySQ = sq.SpinQubit(n_q=1, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency='Carnot',
                                 stages_ts=stage_ts, silicon_abs=silicon_abs)
             powerGrid[i, j] = mySQ.total_power()
             fidelityGrid[i, j] = mySQ.fid_1q()
