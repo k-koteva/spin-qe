@@ -77,7 +77,7 @@ class Cryo(BaseModel):
         # si_abs = round(float(Atten.val(frac=(1 - Si_abs), convert_to='dB')), 2)
 
         # Add Tq: Si_abs as a key-value pair
-        zipped_dict[Tq] = si_abs + equal_additional_attenuation/100
+        zipped_dict[Tq] = si_abs + equal_additional_attenuation
         # logger.critical(f"Chip attenuation: {si_abs}")
 
         # Sort keys and create the desired list

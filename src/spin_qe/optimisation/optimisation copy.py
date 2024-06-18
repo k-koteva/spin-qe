@@ -26,7 +26,7 @@ def calculate_power_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray
         logger.info(f'Rabi frequency = {rabi}')
         for j, tq in enumerate(tqb):
             logger.info(f'Temperature = {tq}')
-            mySQ = sq.SpinQubit(n_q=1, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
+            mySQ = sq.SpinQubit(n_q=10, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
                                 stages_ts=stage_ts, silicon_abs=silicon_abs)
             cryoGrid[i, j] = mySQ.cryo_power()
             conductionGrid[i, j] = mySQ.cables_power()
@@ -60,27 +60,13 @@ def optimize_power_and_efficiency(powerful: np.ndarray, smoothFid: np.ndarray, m
 
 def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: np.ndarray, fid_levels: List[float], power_levels: List[float], filename: str, plot_energy: bool = False):
         # Define the path to the Results folder
-    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results')
+    results_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results')
     
     # Create the Results folder if it doesn't exist
-    os.makedirs(dropbox_folder, exist_ok=True)
-    
-    # Define the path to the results folder in the current directory
-    results_folder = os.path.join(os.getcwd(), 'results')
-    
-    # Create the local results folder if it doesn't exist
     os.makedirs(results_folder, exist_ok=True)
     
-    # # Add svg to the base filename for Dropbox
-    # svg_filename = filename + '.svg'
-    
-    # # Add pdf to the base filename for local folder
-    # pdf_filename = filename + '.pdf'
-    
-    # Full paths for saving the files
-    # dropbox_full_path = os.path.join(dropbox_folder, svg_filename)
-    # local_full_path = os.path.join(results_folder, pdf_filename)
-
+    # Join the path with the filename
+    full_path = os.path.join(results_folder, filename)
 
     mkl_fid = {level: f'${level}$' for level in fid_levels}
     mkl_power = {level: f'${level}$' for level in power_levels}
@@ -112,13 +98,7 @@ def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: 
     ax0.set_xlabel('Rabi frequency /MHz', fontsize=14)
     
     cbar.ax.set_ylabel(label, fontsize=12)
-
-        # Save the plot as SVG in Dropbox folder
-    fig.savefig(os.path.join(dropbox_folder, filename + '.svg'), bbox_inches='tight')
-    fig.savefig(os.path.join(dropbox_folder, filename + '.pdf'), bbox_inches='tight')
-    
-    # Save the plot as PDF in local results folder
-    fig.savefig(os.path.join(results_folder, filename + '.pdf'), bbox_inches='tight')
+    fig.savefig(filename, bbox_inches='tight')
 
 # def plot_power_vs_temperature(tqb: np.ndarray, powerCarnot: np.ndarray, powerSmall: np.ndarray, filename: str):
 #     plt.figure()
@@ -172,9 +152,9 @@ def main():
     # plot_results(R, T, powerful, smoothFid, fid_levels, power_levels, 'carnotspinQubit_optimPowSiAbs001realTRIAL_checked.pdf')
     # plot_results(R, T, conductionP, smoothFid, fid_levels, power_levels, 'carnotspinQubit_optimPowSiAbs001realTRIAL_checked_conduction.pdf')
     # plot_results(R, T, cryoP, smoothFid, fid_levels, power_levels, 'carnotspinQubit_optimPowSiAbs001realTRIAL_checked_cryo.pdf')
-    plot_results(R, T, energyTotal, smoothFid, fid_levels, energy_levels, 'total_energy_carnot_1Q', plot_energy=True)
-    plot_results(R, T, conductionE, smoothFid, fid_levels, energy_levels, 'conduction_energy_carnot_1Q', plot_energy=True)
-    plot_results(R, T, cryoE, smoothFid, fid_levels, energy_levels, 'cryo_energy_carnot_1Q', plot_energy=True)
+    plot_results(R, T, energyTotal, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_energy.pdf', plot_energy=True)
+    plot_results(R, T, conductionE, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_conduction_energy.pdf', plot_energy=True)
+    plot_results(R, T, cryoE, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_cryo_energy.pdf', plot_energy=True)
 
     #  Extract power values at Rabi frequency of 10 MHz
 

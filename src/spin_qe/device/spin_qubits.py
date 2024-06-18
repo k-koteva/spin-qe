@@ -79,7 +79,7 @@ class SpinQubit(BaseModel):
         rabi = self.rabi
         logger.info(f"rabi: {rabi}")
         delta = 1/T2
-        prob = 1 - (np.pi+1)*delta**2/(4*rabi**2)
+        prob = 1 - (np.pi+1)*delta**2/(4*rabi**2)   
         return prob
 
     def fid_2q(self) -> float:
