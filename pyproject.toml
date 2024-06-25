@@ -46,3 +46,5 @@ omit = [
     "tests/*",
     # Any other patterns to exclude
 ]
+
+[tool.pdm]

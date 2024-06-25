@@ -8,6 +8,7 @@ from scipy.constants import h
 
 from spin_qe.components.cables import sum_conduction_power
 from spin_qe.components.cryostat import Cryo
+from numpy.polynomial.polynomial import Polynomial
 
 
 class SpinQubit(BaseModel):
@@ -107,6 +108,22 @@ class SpinQubit(BaseModel):
         total_fid = (fid_1q ** num_1q_gates) * (fid_2q **
                                                 num_2q_gates) * (fid_meas ** num_meas)
         return total_fid
+    
+    def fidelity(self, model='Model 1'):
+        if model == 'Model 1':
+            # Rabi**4
+            poly_coeff= np.array([ 5.09137534e+21, -2.77520845e+21,  1.40261875e+22, -1.85030980e+22, 1.02776058e+22])
+            my_poly = Polynomial(poly_coeff)
+            fidelity = 1-(my_poly(self.Tq)/self.rabi**4)
+        elif model == 'Model 2':
+            # Rabi
+            poly_coeff= np.array([ 1705.09129852,  -929.4116949 ,  4697.34182489, -6196.65008002, 3441.94938684])
+            my_poly = Polynomial(poly_coeff)
+            fidelity = 1-(my_poly(self.Tq)/self.rabi)
+        else:
+            raise ValueError("Invalid trend value. Please choose either 'Model 1' or 'Model 2'.")
+
+        return fidelity
 
     class Config:
         arbitrary_types_allowed = True
