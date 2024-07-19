@@ -109,7 +109,7 @@ class SpinQubit(BaseModel):
                                                 num_2q_gates) * (fid_meas ** num_meas)
         return total_fid
     
-    def fidelity(self, model='Model 1'):
+    def fidelity(self, model='Model 1')->float:
         if model == 'Model 1':
             # Rabi**4
             poly_coeff= np.array([ 5.09137534e+21, -2.77520845e+21,  1.40261875e+22, -1.85030980e+22, 1.02776058e+22])

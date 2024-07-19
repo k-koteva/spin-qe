@@ -41,6 +41,25 @@ def calculate_power_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray
 
     return powerGrid, fidelityGrid, conductionGrid, cryoGrid, energyGrid, conductionEGrid, cryoEGrid 
 
+def calculate_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray, calculate_energy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+    attens = [0, 0, 0, 3, 0, 0]
+    stage_ts = [0.007, 0.1, 0.8, 4, 50, 300]
+    silicon_abs = 0.0
+
+    fidelityModel1 = np.zeros((len(rabifreq), len(tqb)))
+    fidelityModel2 = np.zeros((len(rabifreq), len(tqb)))
+
+    for i, rabi in enumerate(rabifreq):
+        logger.info(f'Rabi frequency = {rabi}')
+        for j, tq in enumerate(tqb):
+            logger.info(f'Temperature = {tq}')
+            mySQ = sq.SpinQubit(n_q=1, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
+                                stages_ts=stage_ts, silicon_abs=silicon_abs)
+            fidelityModel1[i, j] = mySQ.fidelity(model='Model 1')
+            fidelityModel2[i, j] = mySQ.fidelity(model='Model 2')
+
+    return fidelityModel1, fidelityModel2
+
 def optimize_power_and_efficiency(powerful: np.ndarray, smoothFid: np.ndarray, metric_target: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     opt_power = 1e28 * np.ones(len(metric_target))
     gate_efficiency = np.zeros(len(metric_target))
@@ -57,6 +76,55 @@ def optimize_power_and_efficiency(powerful: np.ndarray, smoothFid: np.ndarray, m
             gate_efficiency[k] = metric_target[k] / opt_power[k]
 
     return opt_power, gate_efficiency
+
+def plot_fidelity(R: np.ndarray, T: np.ndarray, fid_model1: np.ndarray, fid_model2: np.ndarray, fid_levels: List[float], filename: str):
+            # Define the path to the Results folder
+    # dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results')
+    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/QEIW Abstract')
+    
+    # Create the Results folder if it doesn't exist
+    os.makedirs(dropbox_folder, exist_ok=True)
+    
+    # Define the path to the results folder in the current directory
+    results_folder = os.path.join(os.getcwd(), 'results')
+    
+    # Create the local results folder if it doesn't exist
+    os.makedirs(results_folder, exist_ok=True)
+    fid_model1 = np.where(fid_model1 <= 0, 1e-10, fid_model1)
+    fid_model2 = np.where(fid_model2 <= 0, 1e-10, fid_model2)
+    mkl_fid = {level: f'${level}$' for level in fid_levels}
+    fig = plt.figure()
+    ax0 = fig.gca()
+    plt.xscale('log')
+    plt.yscale('log')
+    fid_contour1 = ax0.contour(R, T, fid_model1, fid_levels,
+                              norm=LogNorm(vmin=float(np.nanmin(fid_model1)),
+                                           vmax=float(np.nanmax(fid_model1))),
+                              colors="orange", linewidths=1)
+    
+
+    fid_contour2 = ax0.contour(R, T, fid_model2, fid_levels,
+                              norm=LogNorm(vmin=float(np.nanmin(fid_model2)),
+                                           vmax=float(np.nanmax(fid_model2))),
+                              colors="blue", linewidths=1)
+    
+    ax0.clabel(fid_contour1, levels=fid_levels, fmt=mkl_fid, fontsize=9, inline=True)
+    ax0.clabel(fid_contour2, levels=fid_levels, fmt=mkl_fid, fontsize=9, inline=True)
+
+    ax0.set_ylabel('Temperature of quantum chip (K)', fontsize=15)
+    ax0.set_xlabel('Rabi frequency (MHz)', fontsize=15)
+
+
+    h1,_ = fid_contour1.legend_elements()
+    h2,_ = fid_contour2.legend_elements()
+    ax0.legend([h1[0], h2[0]], ['Model1', 'Model2'], loc='upper left', fontsize=12, ncol=1, bbox_to_anchor=(0.05, 1))
+    ax0.tick_params(axis='both', which='major', top=True, right=True,  direction='in', length=8, width=1.5, labelsize=12)
+    ax0.tick_params(axis='both', which='minor', top=True, right=True, direction='in', length=4, width=1, labelsize=10)
+    fig.savefig(os.path.join(dropbox_folder, filename + '.pdf'), bbox_inches='tight')
+    
+    # Save the plot as PDF in local results folder
+    fig.savefig(os.path.join(results_folder, filename + '.pdf'), bbox_inches='tight')
+
 
 def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: np.ndarray, fid_levels: List[float], power_levels: List[float], filename: str, plot_energy: bool = False):
         # Define the path to the Results folder
@@ -211,6 +279,7 @@ def main():
     # energyCarnot = energyTotal[rabi_index, :]
     energyCarnot = cryoE[rabi_index, :]
     
+    
     eff='Small System'
     powerful, smoothFid, conductionP, cryoP, energyTotal, conductionE, cryoE = calculate_power_noise(eff, tqb, rabifreq)
     # powerSmall = powerful[rabi_index, :]
@@ -227,6 +296,18 @@ def main():
     # temp_index = np.argmin(np.abs(tqb - 10))
     # energyCarnot = cryoE[rabi_index, :]
 
+def main2():
+    # rabifreq = np.linspace(0.01, 100, 100)
+    # tqb = np.linspace(0.06, 10, 100)
+    tqb = np.logspace(np.log10(0.06), np.log10(10), 100)
+    rabifreq = np.logspace(np.log10(0.01), np.log10(100), 100)
+
+    R, T = np.meshgrid(rabifreq, tqb, indexing='ij')
+    eff = 'Carnot'
+    fidModel1, fidModel2 = calculate_noise(eff, tqb, rabifreq)
+    fid_levels = [0.997, 0.998]
+    plot_fidelity(R, T, fidModel1, fidModel2, fid_levels, 'fidelity_model1and2')
+
 
 if __name__ == "__main__":
-    main()
+    main2()
