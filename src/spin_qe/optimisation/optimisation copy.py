@@ -26,7 +26,7 @@ def calculate_power_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray
         logger.info(f'Rabi frequency = {rabi}')
         for j, tq in enumerate(tqb):
             logger.info(f'Temperature = {tq}')
-            mySQ = sq.SpinQubit(n_q=10, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
+            mySQ = sq.SpinQubit(n_q=1, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
                                 stages_ts=stage_ts, silicon_abs=silicon_abs)
             cryoGrid[i, j] = mySQ.cryo_power()
             conductionGrid[i, j] = mySQ.cables_power()
@@ -60,7 +60,7 @@ def optimize_power_and_efficiency(powerful: np.ndarray, smoothFid: np.ndarray, m
 
 def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: np.ndarray, fid_levels: List[float], power_levels: List[float], filename: str, plot_energy: bool = False):
         # Define the path to the Results folder
-    results_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results')
+    results_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results/Plots1CPQ')
     
     # Create the Results folder if it doesn't exist
     os.makedirs(results_folder, exist_ok=True)
@@ -122,9 +122,9 @@ def plot_energy_vs_temperature(tqb: np.ndarray, energyCarnot: np.ndarray, energy
     plt.figure()
     plt.plot(tqb, energyCarnot, label='Carnot Efficiency')
     plt.plot(tqb, energySmall, label='Small System Efficiency', linestyle='--')
-    plt.xlabel('Temperature of quantum chip /K')
+    plt.xlabel(r'Qubit temperature $T_q$ (K)')
     plt.xscale('log')
-    plt.ylabel('Energy /J')
+    plt.ylabel(r'$E_{\text{cond}}$ (Joules)')
     plt.legend()
     plt.savefig(filename, bbox_inches='tight')
 
@@ -152,24 +152,24 @@ def main():
     # plot_results(R, T, powerful, smoothFid, fid_levels, power_levels, 'carnotspinQubit_optimPowSiAbs001realTRIAL_checked.pdf')
     # plot_results(R, T, conductionP, smoothFid, fid_levels, power_levels, 'carnotspinQubit_optimPowSiAbs001realTRIAL_checked_conduction.pdf')
     # plot_results(R, T, cryoP, smoothFid, fid_levels, power_levels, 'carnotspinQubit_optimPowSiAbs001realTRIAL_checked_cryo.pdf')
-    plot_results(R, T, energyTotal, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_energy.pdf', plot_energy=True)
-    plot_results(R, T, conductionE, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_conduction_energy.pdf', plot_energy=True)
-    plot_results(R, T, cryoE, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_cryo_energy.pdf', plot_energy=True)
+    # plot_results(R, T, energyTotal, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_energy.pdf', plot_energy=True)
+    # plot_results(R, T, conductionE, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_conduction_energy.pdf', plot_energy=True)
+    # plot_results(R, T, cryoE, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_cryo_energy.pdf', plot_energy=True)
 
     #  Extract power values at Rabi frequency of 10 MHz
 
-    # rabi_index = np.argmin(np.abs(rabifreq - 10))
-    # # powerCarnot = powerful[rabi_index, :]
-    # energyCarnot = energyTotal[rabi_index, :]
-    # eff='Small System'
-    # powerful, smoothFid, conductionP, cryoP, energyTotal, conductionE, cryoE = calculate_power_noise(eff, tqb, rabifreq)
-    # # powerSmall = powerful[rabi_index, :]
-    # energySmall = energyTotal[rabi_index, :]
-    # # plot_power_vs_temperature(tqb, powerCarnot, powerSmall, 'power_vs_temperature.pdf')
+    rabi_index = np.argmin(np.abs(rabifreq - 10))
+    # powerCarnot = powerful[rabi_index, :]
+    energyCarnot = conductionE[rabi_index, :]
+    eff='Small System'
+    powerful, smoothFid, conductionP, cryoP, energyTotal, conductionE, cryoE = calculate_power_noise(eff, tqb, rabifreq)
+    # powerSmall = powerful[rabi_index, :]
+    energySmall = conductionE[rabi_index, :]
+    # plot_power_vs_temperature(tqb, powerCarnot, powerSmall, 'power_vs_temperature.pdf')
 
-    #     # Extract energy values at Rabi frequency of 10 MHz
+        # Extract energy values at Rabi frequency of 10 MHz
     
-    # plot_energy_vs_temperature(tqb, energyCarnot, energySmall, 'energy_vs_temperature_compare.pdf')
+    plot_energy_vs_temperature(tqb, energyCarnot, energySmall, 'energy_vs_temperature_conduction_1Q.pdf')
 
 
 if __name__ == "__main__":

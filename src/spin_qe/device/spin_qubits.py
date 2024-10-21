@@ -61,7 +61,8 @@ class SpinQubit(BaseModel):
     def n_cables(self) -> int:
         logger.info(f"n_q: {self.n_q}")
         logger.info(f"number of cables: {6*self.n_q -1}")
-        return 6*self.n_q -1
+        return self.n_q
+        # return 6*self.n_q -1
     
     def cables_power(self) -> float:
         if self.cryostat is None:

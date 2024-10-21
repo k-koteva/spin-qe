@@ -22,6 +22,7 @@ class Cryo(BaseModel):
     # efficiency: str = 'Small System'
     efficiency: str = 'Carnot'
     cables_atten: float = Field(30, ge=0)
+    amplifiers: Optional[bool] = False
 
     @validator("Tq", pre=True, always=True)
     def validate_Tq(cls, value):  # pylint: disable=no-self-argument
@@ -98,6 +99,12 @@ class Cryo(BaseModel):
 
 
     def eff(self, stage_T: float):
+        """
+        While the function is called eff (short from efficiency), 
+        this is in fact the specific power of the cyostat 
+        or 1/COP (coefficient of performance).
+        This will come 
+        """
         if self.efficiency == 'Carnot':
             logger.warning(f"Efficiency: 'Carnot'")
             specific_power = (300 - stage_T) / stage_T
@@ -233,9 +240,13 @@ def overlay_heat_evacuated_plots(cryo_instances, power):
 
 def calculate_specific_power(temp: Union[int, float]) -> float:
     # k = 236236.0  # coefficient from the logarithmic fit
-    k = 3.24*1e5 
+    k = 3.2*1e5 
     efficiency = k * (1-temp/300) * (temp ** (-2))
     return efficiency
+
+# def calculate_specific_power(temp: Union[int, float]) -> float:
+#     k = 2.86e5  # coefficient from the logarithmic fit
+#     return k * temp ** -2.09
 
 def plot_total_power_vs_Si_abs_and_Tq(
     Tq_values: List[float],

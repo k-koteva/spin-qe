@@ -26,10 +26,10 @@ def calculate_power_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray
         logger.info(f'Rabi frequency = {rabi}')
         for j, tq in enumerate(tqb):
             logger.info(f'Temperature = {tq}')
-            mySQ = sq.SpinQubit(n_q=1, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
+            mySQ = sq.SpinQubit(n_q=100, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
                                 stages_ts=stage_ts, silicon_abs=silicon_abs)
-            cryoGrid[i, j] = mySQ.cryo_power()
-            conductionGrid[i, j] = mySQ.cables_power()
+            cryoGrid[i, j] = mySQ.cryo_power()/100
+            conductionGrid[i, j] = mySQ.cables_power()/100
             powerGrid[i, j] = cryoGrid[i, j] + conductionGrid[i, j]
 
             energyGrid[i, j] = powerGrid[i, j]*mySQ.gate_t
@@ -79,8 +79,8 @@ def optimize_power_and_efficiency(powerful: np.ndarray, smoothFid: np.ndarray, m
 
 def plot_fidelity(R: np.ndarray, T: np.ndarray, fid_model1: np.ndarray, fid_model2: np.ndarray, fid_levels: List[float], filename: str):
             # Define the path to the Results folder
-    # dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results')
-    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/QEIW Abstract')
+    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results2')
+    # dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/QEIW Abstract/')
     
     # Create the Results folder if it doesn't exist
     os.makedirs(dropbox_folder, exist_ok=True)
@@ -128,8 +128,8 @@ def plot_fidelity(R: np.ndarray, T: np.ndarray, fid_model1: np.ndarray, fid_mode
 
 def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: np.ndarray, fid_levels: List[float], power_levels: List[float], filename: str, plot_energy: bool = False):
         # Define the path to the Results folder
-    # dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results')
-    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/QEIW Abstract')
+    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results2')
+    # dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/QEIW Abstract')
     
     # Create the Results folder if it doesn't exist
     os.makedirs(dropbox_folder, exist_ok=True)
@@ -142,7 +142,7 @@ def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: 
 
     mkl_fid = {level: f'${level}$' for level in fid_levels}
     mkl_power = {level: f'${level}$' for level in power_levels}
-    label = 'Energy per gate (J)' if plot_energy else 'Power /W'
+    label = 'Energy per qubit (J)' if plot_energy else 'Power /W'
     fig = plt.figure()
     ax0 = fig.gca()
     powerPlot = ax0.pcolor(R, T, powerful, 
@@ -177,7 +177,7 @@ def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: 
     h1,_ = fid_contour.legend_elements()
     h2,_ = power_contour.legend_elements()
 
-    ax0.legend([h1[0], h2[0]], ['Gate\nfidelity', 'Energy\nper\ngate'], loc='upper left', fontsize=8, ncol=1, bbox_to_anchor=(0.05, 1))
+    ax0.legend([h1[0], h2[0]], ['Gate\nfidelity', 'Energy\nper\nqubit'], loc='upper left', fontsize=8, ncol=1, bbox_to_anchor=(0.05, 1))
     ax0.tick_params(axis='both', which='major', top=True, right=True,  direction='in', length=8, width=1.5, labelsize=12)
     ax0.tick_params(axis='both', which='minor', top=True, right=True, direction='in', length=4, width=1, labelsize=10)
         # Save the plot as SVG in Dropbox folder
@@ -206,7 +206,7 @@ def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: 
 #     plt.savefig(filename, bbox_inches='tight')
 
 def plot_energy_vs_temperature(tqb: np.ndarray, energyCarnot: np.ndarray, energySmall: np.ndarray, filename: str):
-    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results')
+    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results2')
     # Create the Results folder if it doesn't exist
     os.makedirs(dropbox_folder, exist_ok=True)
     plt.title('1 Qubit at 10MHz', fontsize=16) 
@@ -224,7 +224,7 @@ def plot_energy_vs_temperature(tqb: np.ndarray, energyCarnot: np.ndarray, energy
     plt.savefig(os.path.join(dropbox_folder, filename + '.pdf'), bbox_inches='tight')
 
 def plot_energy_vs_rabi(rabi: np.ndarray, energyCarnot: np.ndarray, energySmall: np.ndarray, filename: str):
-    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results')
+    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results2')
     # Create the Results folder if it doesn't exist
     os.makedirs(dropbox_folder, exist_ok=True)
     plt.title('1 Qubit at 10MHz', fontsize=16) 
@@ -309,5 +309,111 @@ def main2():
     plot_fidelity(R, T, fidModel1, fidModel2, fid_levels, 'fidelity_model1and2')
 
 
+
+
+def plot_combined_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray,
+                          fid_model1: np.ndarray, fid_model2: np.ndarray,
+                          fid_levels: List[float], power_levels: List[float],
+                          filename: str, plot_energy: bool = False):
+    # Define the path to the Results folder
+    dropbox_folder = os.path.expanduser('~/Dropbox/Apps/Overleaf/Energetics NISQ Spin qubits/Results2')
+    # Create the Results folder if it doesn't exist
+    os.makedirs(dropbox_folder, exist_ok=True)
+    
+    # Define the path to the results folder in the current directory
+    results_folder = os.path.join(os.getcwd(), 'results')
+    # Create the local results folder if it doesn't exist
+    os.makedirs(results_folder, exist_ok=True)
+    
+    # Handle negative or zero values in fid_model1 and fid_model2
+    fid_model1 = np.where(fid_model1 <= 0, 1e-10, fid_model1)
+    fid_model2 = np.where(fid_model2 <= 0, 1e-10, fid_model2)
+
+    mkl_fid = {level: f'${level}$' for level in fid_levels}
+    mkl_power = {level: f'${level}$' for level in power_levels}
+    label = 'Energy per gate (J)' if plot_energy else 'Power /W'
+    
+    fig = plt.figure()
+    ax0 = fig.gca()
+    powerPlot = ax0.pcolor(R, T, powerful, 
+                           norm=LogNorm(vmin=float(np.nanmin(powerful)), vmax=float(np.nanmax(powerful))),
+                           shading="auto")
+
+    # Plot the contours for fid_model1 and fid_model2
+    fid_contour1 = ax0.contour(R, T, fid_model1, fid_levels,
+                               norm=LogNorm(vmin=float(np.nanmin(fid_model1)),
+                                            vmax=float(np.nanmax(fid_model1))),
+                               colors="orange", linewidths=1)
+    
+    fid_contour2 = ax0.contour(R, T, fid_model2, fid_levels,
+                               norm=LogNorm(vmin=float(np.nanmin(fid_model2)),
+                                            vmax=float(np.nanmax(fid_model2))),
+                               colors="blue", linewidths=1)
+
+    power_contour = ax0.contour(R, T, powerful, power_levels,
+                                norm=LogNorm(vmin=float(np.nanmin(powerful)),
+                                             vmax=float(np.nanmax(powerful))),
+                                colors="white", linewidths=1)
+
+    ax0.clabel(fid_contour1, levels=fid_levels, fmt=mkl_fid, fontsize=9, inline=True)
+    ax0.clabel(fid_contour2, levels=fid_levels, fmt=mkl_fid, fontsize=9, inline=True)
+    ax0.clabel(power_contour, levels=power_levels, fmt=mkl_power, fontsize=9, inline=True)
+
+    ax0.set_yscale('log')
+    ax0.set_xscale('log')
+    cbar = fig.colorbar(powerPlot, ax=ax0)
+    ax0.set_ylabel('Temperature of quantum chip (K)', fontsize=15)
+    ax0.set_xlabel('Rabi frequency (MHz)', fontsize=15)
+
+    cbar.ax.set_ylabel(label, fontsize=15)
+    cbar.ax.tick_params(axis='both', which='major', length=8, width=1.5, labelsize=12)
+    cbar.ax.tick_params(axis='both', which='minor', length=4, width=1, labelsize=10)
+
+    h1, _ = fid_contour1.legend_elements()
+    h2, _ = fid_contour2.legend_elements()
+    h3, _ = power_contour.legend_elements()
+
+    ax0.legend([h1[0], h2[0], h3[0]], ['Model1 Fidelity', 'Model2 Fidelity', 'Energy per qubit'], loc='upper left', fontsize=8, ncol=1, bbox_to_anchor=(0.05, 1))
+    ax0.tick_params(axis='both', which='major', top=True, right=True,  direction='in', length=8, width=1.5, labelsize=12)
+    ax0.tick_params(axis='both', which='minor', top=True, right=True, direction='in', length=4, width=1, labelsize=10)
+
+    # Save the plot in Dropbox and local results folders
+    fig.savefig(os.path.join(dropbox_folder, filename + '.svg'), bbox_inches='tight')
+    fig.savefig(os.path.join(dropbox_folder, filename + '.pdf'), bbox_inches='tight')
+    fig.savefig(os.path.join(results_folder, filename + '.pdf'), bbox_inches='tight')
+
+def main3():
+    # Define temperature and Rabi frequency ranges
+    tqb = np.logspace(np.log10(0.06), np.log10(10), 100)
+    rabifreq = np.logspace(np.log10(0.01), np.log10(100), 100)
+    R, T = np.meshgrid(rabifreq, tqb, indexing='ij')
+
+    # Calculate power and noise metrics for 'Carnot' efficiency
+    eff = 'Carnot'
+    powerful, _, conductionP, cryoP, energyTotal, conductionE, cryoE = calculate_power_noise(eff, tqb, rabifreq)
+    
+    # Calculate fidelity models for 'Carnot' efficiency
+    fidModel1, fidModel2 = calculate_noise(eff, tqb, rabifreq)
+
+    # Define contour levels for fidelity and power/energy
+    fid_levels = [0.9, 0.996, 0.9999]  # Adjust as necessary
+    power_levels = [1, 10, 30]
+    energy_levels = [1e-8, 1e-7, 1e-6]
+
+    # Plot combined results for total energy
+    plot_combined_results(R, T, energyTotal, fidModel1, fidModel2, fid_levels, energy_levels, 'total_energy_carnot_combined100Q', plot_energy=True)
+
+    # # Plot combined results for conduction energy
+    # plot_combined_results(R, T, conductionE, fidModel1, fidModel2, fid_levels, energy_levels, 'conduction_energy_carnot_combined', plot_energy=True)
+
+    # # Plot combined results for cryogenics energy
+    # plot_combined_results(R, T, cryoE, fidModel1, fidModel2, fid_levels, energy_levels, 'cryo_energy_carnot_combined', plot_energy=True)
+
+    # # Optionally, plot results for power if needed
+    # plot_combined_results(R, T, powerful, fidModel1, fidModel2, fid_levels, power_levels, 'power_carnot_combined', plot_energy=False)
+
+# Call the main3 function to generate the plots
+
 if __name__ == "__main__":
-    main2()
+    main3()
+
