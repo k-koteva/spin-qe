@@ -38,6 +38,23 @@ class Cryo(BaseModel):
 
     @validator("stages", pre=True, always=True)
     def set_stages(cls, value, values):
+        """
+        Configures cryogenic system stages by adjusting attenuations based on cable losses and filtering
+        out stages below the operational temperature threshold (Tq). Adds a standard 300K stage if not present
+        and applies silicon absorption adjustments if specified. Outputs a DataFrame of adjusted stages 
+        sorted in descending temperature order.
+
+        Returns:
+        - DataFrame: Stages with temperatures and corresponding attenuations.
+
+        Raises:
+        - ValueError: If temps and attens lengths mismatch.
+        - TypeError: If Si_abs is not a float or if its dB conversion fails.
+
+        Warning: 
+        - per_cable_atten is set to 6dB by default.
+
+        """
         temps = values.get('temps')
         attens = values.get('attens')
         Tq = values.get('Tq')
@@ -48,17 +65,14 @@ class Cryo(BaseModel):
         if len(temps) != len(attens):
             raise ValueError(
                 "Length of temperatures and attenuations must match.")
-        # Check if 300 degrees stage is already included
-        include_300_stage = 300 not in temps
 
         # Add 0 attenuation for 300 degrees stage if not included
-        if include_300_stage:
+        if 300 not in temps:
             temps.append(300)
             attens.append(0)
 
-        # Add cable attenuation to the given attenuation on each stage
+        # Add cable attenuation at each stage
         attens = [atten + per_cable_atten for atten in attens]
-
         zipped_dict = {temp: atten for temp, atten in zip(temps, attens)}
 
         # Remove entries where temperature is lower or equal to Tq
@@ -79,7 +93,7 @@ class Cryo(BaseModel):
 
         # Sort keys and create the desired list
         sorted_keys = sorted(zipped_dict.keys(), reverse=True)
-        final_list = sorted_keys #+ sorted_keys[::-1][1:]
+        final_list = sorted_keys #+ sorted_keys[::-1][1:] (more detailed cryo model)
 
         # Create values list based on the final_list
         values_list = [zipped_dict[temp] for temp in final_list]

@@ -29,6 +29,22 @@ def cryo_instance():
         efficiency='Small System'
     )
 
+@pytest.fixture
+def cryo_instance_Carnot():
+    temps = [4, 0.8, 0.1]
+    attens = [4, 7, 0.1]
+    Tq = 0.2
+    Si_abs = 0.0
+    per_cable_atten = 6
+    return Cryo(
+        Tq=Tq,
+        temps=temps,
+        attens=attens,
+        Si_abs=Si_abs,
+        per_cable_atten=per_cable_atten,
+        efficiency='Carnot'
+    )
+
 def test_set_stages(cryo_instance):
     # Run the set_stages function
     result_df = cryo_instance.stages
@@ -44,6 +60,14 @@ def test_set_stages(cryo_instance):
 
     # Optionally, print the DataFrame for visual verification during tests
     print(result_df)
+
+def test_efficiency_setting(cryo_instance, cryo_instance_Carnot):
+    # Check if the efficiency is set to 'Small System'
+    assert cryo_instance.efficiency == 'Small System', "Efficiency should be set to 'Small System'"
+    assert cryo_instance_Carnot.efficiency == 'Carnot', "Efficiency should be set to 'Small System'"
+
+
+
 # def test_temps_and_attens_validation(cryo_instance):
 #     assert len(cryo_instance.temps) == len(cryo_instance.attens)
 #     assert all(isinstance(temp, float) for temp in cryo_instance.temps)
