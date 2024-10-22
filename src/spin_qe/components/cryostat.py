@@ -21,7 +21,7 @@ class Cryo(BaseModel):
     stages: DataFrame = DataFrame()
     # efficiency: str = 'Small System'
     efficiency: str = 'Carnot'
-    cables_atten: float = Field(30, ge=0)
+    per_cable_atten: Optional[float] = Field(6, ge=0)
     amplifiers: Optional[bool] = False
 
     @validator("Tq", pre=True, always=True)
@@ -42,8 +42,8 @@ class Cryo(BaseModel):
         attens = values.get('attens')
         Tq = values.get('Tq')
         Si_abs = values.get('Si_abs')
-        cables_atten = values.get('cables_atten', 30)
-        logger.warning(f"cables_atten: {cables_atten}")
+        per_cable_atten = values.get('per_cable_atten', 6)
+        logger.warning(f"per_cable_atten: {per_cable_atten}")
 
         if len(temps) != len(attens):
             raise ValueError(
@@ -56,12 +56,8 @@ class Cryo(BaseModel):
             temps.append(300)
             attens.append(0)
 
-        # Calculate equal additional attenuation for each stage
-        num_stages = len(temps)
-        equal_additional_attenuation = cables_atten / (num_stages)
-
-        # Add equal additional attenuation to each existing attenuation
-        attens = [atten + equal_additional_attenuation for atten in attens]
+        # Add cable attenuation to the given attenuation on each stage
+        attens = [atten + per_cable_atten for atten in attens]
 
         zipped_dict = {temp: atten for temp, atten in zip(temps, attens)}
 
@@ -78,12 +74,12 @@ class Cryo(BaseModel):
         # si_abs = round(float(Atten.val(frac=(1 - Si_abs), convert_to='dB')), 2)
 
         # Add Tq: Si_abs as a key-value pair
-        zipped_dict[Tq] = si_abs + equal_additional_attenuation
+        zipped_dict[Tq] = si_abs + per_cable_atten
         # logger.critical(f"Chip attenuation: {si_abs}")
 
         # Sort keys and create the desired list
         sorted_keys = sorted(zipped_dict.keys(), reverse=True)
-        final_list = sorted_keys + sorted_keys[::-1][1:]
+        final_list = sorted_keys #+ sorted_keys[::-1][1:]
 
         # Create values list based on the final_list
         values_list = [zipped_dict[temp] for temp in final_list]
@@ -268,7 +264,7 @@ def plot_total_power_vs_Si_abs_and_Tq(
                 temps=temps,
                 attens=attens,
                 Si_abs=0.0,
-                cables_atten = 30
+                per_cable_atten = 6
             )
 
             # Calculate reference power with Si_abs=0.0
@@ -280,7 +276,7 @@ def plot_total_power_vs_Si_abs_and_Tq(
                 temps=temps,
                 attens=attens,
                 Si_abs=Si_abs,
-                cables_atten = 30
+                per_cable_atten = 6
             )
 
             # Calculate power with the provided Si_abs
@@ -351,12 +347,12 @@ def main():
 
     # function to test the input power calculation
     power_at_Tq = 0.5e-3 # in Watts (or any consistent unit)
-    cables_atten = 30
+    per_cable_atten = 6
     # Create an instance of Cryo
-    # cryo_instance = Cryo(Tq=Tq, temps=temps, attens=attens, Si_abs=0, cables_atten=cables_atten)
-    cryo_instance = Cryo(Tq=0.02, temps=[4], attens=[3.01], Si_abs=0, cables_atten=30)
+    # cryo_instance = Cryo(Tq=Tq, temps=temps, attens=attens, Si_abs=0, per_cable_atten=per_cable_atten)
+    cryo_instance = Cryo(Tq=0.02, temps=[4], attens=[3.01], Si_abs=0, per_cable_atten=30)
 
-    print(f"Cables attenuation: {cryo_instance.cables_atten}dB")
+    print(f"Cables attenuation: {cryo_instance.per_cable_atten}dB")
 
     # Calculate the input power required
     input_power = cryo_instance.calculate_input_power(power_at_Tq)
@@ -364,9 +360,9 @@ def main():
     print(
         f"Input power required to deliver {power_at_Tq}W at Tq ({Tq}K): {input_power}W")
     
-    cryo_instance = Cryo(Tq=0.02, temps=[4], attens=[3.01], Si_abs=0.5, cables_atten=30)
+    cryo_instance = Cryo(Tq=0.02, temps=[4], attens=[3.01], Si_abs=0.5, per_cable_atten=30)
 
-    print(f"Cables attenuation: {cryo_instance.cables_atten}dB")
+    print(f"Cables attenuation: {cryo_instance.per_cable_atten}dB")
 
     # Calculate the input power required
     input_power = cryo_instance.calculate_input_power(power_at_Tq)

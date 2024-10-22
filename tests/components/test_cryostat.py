@@ -1,31 +1,49 @@
-# #Test cryogenics
+#Test cryogenics
 
-# import pytest
-# from pandas import DataFrame
+import pytest
+from pandas import DataFrame
 
-# from spin_qe.components.cryostat import (Cryo, calculate_specific_power,
-#                                          overlay_heat_evacuated_plots,
-#                                          plot_total_power_vs_Si_abs_and_Tq)
-# from spin_qe.validation.attenuation import Atten
-# from spin_qe.validation.power import Power
-# from spin_qe.validation.temperature import Temp
+from spin_qe.components.cryostat import (Cryo, calculate_specific_power,
+                                         overlay_heat_evacuated_plots,
+                                         plot_total_power_vs_Si_abs_and_Tq)
+from spin_qe.validation.attenuation import Atten
+from spin_qe.validation.power import Power
+from spin_qe.validation.temperature import Temp
+from pandas import DataFrame
+from pandas.testing import assert_frame_equal
 
 
-# @pytest.fixture
-# def cryo_instance():
-#     temps = [4, 0.8, 0.1]
-#     attens = [10, 3, 0.1]
-#     Tq = 0.04
-#     Si_abs = 0.5
-#     cables_atten = 30
-#     return Cryo(
-#         Tq=Tq,
-#         temps=temps,
-#         attens=attens,
-#         Si_abs=Si_abs,
-#         cables_atten=cables_atten
-#     )
+@pytest.fixture
+def cryo_instance():
+    temps = [4, 0.8, 0.1]
+    attens = [4, 7, 0.1]
+    Tq = 0.2
+    Si_abs = 0.0
+    per_cable_atten = 6
+    return Cryo(
+        Tq=Tq,
+        temps=temps,
+        attens=attens,
+        Si_abs=Si_abs,
+        per_cable_atten=per_cable_atten,
+        efficiency='Small System'
+    )
 
+def test_set_stages(cryo_instance):
+    # Run the set_stages function
+    result_df = cryo_instance.stages
+
+    # Define what the expected DataFrame should look like
+    expected_df = DataFrame({
+        'temps': [300, 4, 0.8, 0.2],
+        'attens': [6, 10, 13, 6]
+    })
+
+    # Assert that the result matches the expected DataFrame
+    assert_frame_equal(result_df, expected_df, check_dtype=False, atol=1e-5, rtol=1e-5)
+
+    # Optionally, print the DataFrame for visual verification during tests
+    print(result_df)
 # def test_temps_and_attens_validation(cryo_instance):
 #     assert len(cryo_instance.temps) == len(cryo_instance.attens)
 #     assert all(isinstance(temp, float) for temp in cryo_instance.temps)

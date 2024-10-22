@@ -33,6 +33,7 @@ build-backend = "pdm.backend"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-W ignore::DeprecationWarning:jupyter_client.*"
 
 [tool.coverage.report]
 exclude_also = [
@@ -48,3 +49,4 @@ omit = [
 ]
 
 [tool.pdm]
+
