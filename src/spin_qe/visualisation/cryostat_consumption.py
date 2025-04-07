@@ -28,9 +28,9 @@ reference_powersCarnot = []
 reference_powers = []
 example_data = []
 for Tq in Tq_values:
-    cryo = Cryo(Tq=Tq, temps=temps, attens=attens, Si_abs=0.0, cables_atten=30, efficiency= 'Carnot')
+    cryo = Cryo(Tq=Tq, temps=temps, attens=attens, Si_abs=0.0, per_cable_atten=6, efficiency= 'Carnot')
     reference_powerCarnot = cryo.total_power(power=input_power)
-    cryo = Cryo(Tq=Tq, temps=temps, attens=attens, Si_abs=0.0, cables_atten=30, efficiency='Small System')
+    cryo = Cryo(Tq=Tq, temps=temps, attens=attens, Si_abs=0.0, per_cable_atten=6, efficiency='Small System')
     reference_power = cryo.total_power(power=input_power)
     example_data.append(StageData(temperature=Tq, heat_extracted=[reference_power], power_consumption=[reference_powerCarnot]))
 # Example data for plotting (this should be replaced with the actual data)

@@ -1,6 +1,6 @@
 import os
 from typing import Any, List, Tuple, Union
-
+import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
@@ -10,8 +10,8 @@ import spin_qe.device.spin_qubits as sq
 
 
 def calculate_power_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray, calculate_energy: bool = True) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    attens = [0, 0, 0, 3, 0, 0]
-    stage_ts = [0.007, 0.1, 0.8, 4, 50, 300]
+    attens = [0, 0, 3, 0, 0]
+    stage_ts = [0.1, 0.8, 4, 50, 300]
     silicon_abs = 0.0
 
     powerGrid = np.zeros((len(rabifreq), len(tqb)))
@@ -29,12 +29,16 @@ def calculate_power_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray
             mySQ = sq.SpinQubit(n_q=1, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
                                 stages_ts=stage_ts, silicon_abs=silicon_abs)
             cryoGrid[i, j] = mySQ.cryo_power()
-            conductionGrid[i, j] = mySQ.cables_power()
+            # conductionGrid[i, j] = mySQ.single_cables_power()
+            # conductionGrid[i, j] = mySQ.empty_cryo_power()
+            conductionGrid[i, j] = mySQ.empty_cryo_power()
             powerGrid[i, j] = cryoGrid[i, j] + conductionGrid[i, j]
 
             energyGrid[i, j] = powerGrid[i, j]*mySQ.gate_t
             cryoEGrid[i, j] = cryoGrid[i, j]*mySQ.gate_t
             conductionEGrid[i, j] = conductionGrid[i, j]*mySQ.gate_t
+            # conductionEGrid[i, j] = conductionGrid[i, j]
+            
 
             fidelityGrid[i, j] = mySQ.fid_1q()
             logger.info(f'fid = {mySQ.fid_1q()}')
@@ -120,12 +124,13 @@ def plot_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray, smoothFid: 
 
 def plot_energy_vs_temperature(tqb: np.ndarray, energyCarnot: np.ndarray, energySmall: np.ndarray, filename: str):
     plt.figure()
-    plt.plot(tqb, energyCarnot, label='Carnot Efficiency')
-    plt.plot(tqb, energySmall, label='Small System Efficiency', linestyle='--')
-    plt.xlabel(r'Qubit temperature $T_q$ (K)')
+    plt.plot(tqb, energyCarnot, linewidth=2.5)  # Thicker line, removed legend
+    plt.plot(tqb, energySmall, linestyle='--', linewidth=2.5)  # Thicker line, removed legend
+    plt.xlabel(r'Qubit temperature $T_q$ (K)', fontsize=16)  # Larger x-axis label
     plt.xscale('log')
-    plt.ylabel(r'$E_{\text{cond}}$ (Joules)')
-    plt.legend()
+    plt.yscale('log')
+    plt.ylabel(r'$E_{cond}$ (Joules)', fontsize=16)  # Larger y-axis label
+    plt.tick_params(axis='both', which='major', labelsize=16)  # Larger ticks
     plt.savefig(filename, bbox_inches='tight')
 
 def find_min_and_index(values: list) -> Tuple[Any, int]:
@@ -133,8 +138,20 @@ def find_min_and_index(values: list) -> Tuple[Any, int]:
     min_index = values.index(min_value)
     return min_value, min_index
 
+def save_energy_data_to_csv(tqb: np.ndarray, energy_carnot: np.ndarray, energy_ss: np.ndarray, filename: str) -> None:
+    # Create a DataFrame from the provided data
+    data = {
+        'Tqb': tqb,
+        'energyCarnot': energy_carnot,
+        'energySS': energy_ss
+    }
+    df = pd.DataFrame(data)
+
+    # Save the DataFrame to a CSV file
+    df.to_csv(filename, index=False)
+
 def main():
-    tqb = np.logspace(np.log10(0.06), np.log10(10), 100)
+    tqb = np.logspace(np.log10(0.0011), np.log10(10), 100)
     rabifreq = np.linspace(0.01, 15, 100)
     R, T = np.meshgrid(rabifreq, tqb, indexing='ij')
     eff = 'Carnot'
@@ -156,9 +173,9 @@ def main():
     # plot_results(R, T, conductionE, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_conduction_energy.pdf', plot_energy=True)
     # plot_results(R, T, cryoE, smoothFid, fid_levels, energy_levels, 'carnotspin10Qubit_optimPowSiAbs001realTRIAL_checked_cryo_energy.pdf', plot_energy=True)
 
-    #  Extract power values at Rabi frequency of 10 MHz
+    #  Extract power values at Rabi frequency of 1 MHz
 
-    rabi_index = np.argmin(np.abs(rabifreq - 10))
+    rabi_index = np.argmin(np.abs(rabifreq - 1))
     # powerCarnot = powerful[rabi_index, :]
     energyCarnot = conductionE[rabi_index, :]
     eff='Small System'
@@ -167,9 +184,15 @@ def main():
     energySmall = conductionE[rabi_index, :]
     # plot_power_vs_temperature(tqb, powerCarnot, powerSmall, 'power_vs_temperature.pdf')
 
-        # Extract energy values at Rabi frequency of 10 MHz
+        # Extract energy values at Rabi frequency of 1 MHz
     
-    plot_energy_vs_temperature(tqb, energyCarnot, energySmall, 'energy_vs_temperature_conduction_1Q.pdf')
+    plot_energy_vs_temperature(tqb, energyCarnot, energySmall, 'energy_vs_temperature_conduction_emptyCryo.pdf')
+    plot_energy_vs_temperature(tqb, energyCarnot, energySmall, 'energy_vs_temperature_conduction_emptyCryo.svg')
+
+    save_energy_data_to_csv(tqb, energyCarnot, energySmall, 'energy_vs_temperature_conduction_emptyCryo.csv')
+
+
+
 
 
 if __name__ == "__main__":

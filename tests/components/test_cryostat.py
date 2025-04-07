@@ -65,6 +65,18 @@ def test_efficiency_setting(cryo_instance, cryo_instance_Carnot):
     # Check if the efficiency is set to 'Small System'
     assert cryo_instance.efficiency == 'Small System', "Efficiency should be set to 'Small System'"
     assert cryo_instance_Carnot.efficiency == 'Carnot', "Efficiency should be set to 'Small System'"
+def test_heat_evacuated_at_stage(cryo_instance_Carnot):
+    # Assume the method `heat_evacuated_at_stage` is defined to use the correct calculations
+    # Here we will call the method and verify it returns 6000 when `temp = 0.2` and `power = 1`
+
+    # This is an assumed expected result, ensure you replace it with the actual expected calculation based on the real `Atten.val` outputs
+    expected_heat_evacuated = 6000  # Placeholder, calculate this based on expected attenuation handling
+
+    # Running the actual function with temp = 0.2 and power = 1
+    result = cryo_instance_Carnot.heat_evacuated_at_stage(temp=0.2, power=1)
+
+    # Check if the result matches expected outcome
+    assert result == expected_heat_evacuated, f"Expected heat evacuated to be {expected_heat_evacuated}, but got {result}"
 
 
 

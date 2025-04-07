@@ -18,11 +18,10 @@ class Cryo(BaseModel):
     temps: List[float]
     attens: List[float]
     Si_abs: Optional[float] = Field(0, ge=0, le=1)
-    stages: DataFrame = DataFrame()
-    # efficiency: str = 'Small System'
-    efficiency: str = 'Carnot'
+    efficiency: str = 'Small Systems'
     per_cable_atten: Optional[float] = Field(6, ge=0)
     amplifiers: Optional[bool] = False
+    stages: DataFrame = DataFrame()
 
     @validator("Tq", pre=True, always=True)
     def validate_Tq(cls, value):  # pylint: disable=no-self-argument
@@ -75,8 +74,8 @@ class Cryo(BaseModel):
         attens = [atten + per_cable_atten for atten in attens]
         zipped_dict = {temp: atten for temp, atten in zip(temps, attens)}
 
-        # Remove entries where temperature is lower or equal to Tq
-        zipped_dict = {k: v for k, v in zipped_dict.items() if k > Tq}
+        # Remove entries where temperature is lower than Tq
+        zipped_dict = {k: v for k, v in zipped_dict.items() if k is not None and Tq is not None and k >= Tq}
         if isinstance(Si_abs, float):
             si_abs_value = Atten.val(frac=(1 - Si_abs), convert_to='dB')
             if isinstance(si_abs_value, (float, int)):  # Ensure it's a numeric type
@@ -113,7 +112,6 @@ class Cryo(BaseModel):
         While the function is called eff (short from efficiency), 
         this is in fact the specific power of the cyostat 
         or 1/COP (coefficient of performance).
-        This will come 
         """
         if self.efficiency == 'Carnot':
             logger.warning(f"Efficiency: 'Carnot'")
@@ -185,7 +183,7 @@ class Cryo(BaseModel):
 
         # Sum attenuations from the top stage to just before the Tq
         # Exclude the attenuation at the Tq stage itself
-        summed_attenuation = self.stages.loc[:tq_index[0] - 1, 'attens'].sum()
+        summed_attenuation = self.stages.loc[:tq_index[0], 'attens'].sum()
         attenuation_fraction = Atten.val(
             dB=summed_attenuation, convert_to='frac')
         assert isinstance(attenuation_fraction,

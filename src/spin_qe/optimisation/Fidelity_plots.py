@@ -35,8 +35,8 @@ def plot_results(R: np.ndarray, T: np.ndarray, fid_model1: np.ndarray, fid_model
     ax0.tick_params(axis='both', which='major', top=True, right=True,  direction='in', length=8, width=1.5, labelsize=12)
     ax0.tick_params(axis='both', which='minor', top=True, right=True, direction='in', length=4, width=1, labelsize=10)
 
-    fig.savefig(os.path.join(dropbox_folder, filename + '.svg'), bbox_inches='tight')
-    fig.savefig(os.path.join(dropbox_folder, filename + '.pdf'), bbox_inches='tight')
+    # fig.savefig(os.path.join(dropbox_folder, filename + '.svg'), bbox_inches='tight')
+    # fig.savefig(os.path.join(dropbox_folder, filename + '.pdf'), bbox_inches='tight')
     fig.savefig(os.path.join(results_folder, filename + '.pdf'), bbox_inches='tight')
 
 def fidelity_model1(Tq, rabi):
