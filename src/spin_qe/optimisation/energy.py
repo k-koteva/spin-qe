@@ -533,7 +533,7 @@ def main3():
     powerful, _, conductionP, cryoP, energyTotal, conductionE, cryoE = calculate_power_noise(eff, tqb, rabifreq)
     
     # Calculate fidelity models for 'Carnot' efficiency
-    fidModel1, fidModel2 = calculate_noise(eff, tqb, rabifreq)
+    # fidModel1, fidModel2 = calculate_noise(eff, tqb, rabifreq)
 
     fidModel3, fidModel4 = calculate_noise_nomeas(eff, tqb, rabifreq)
 
@@ -549,7 +549,7 @@ def main3():
     # positions = [position1, position2, position3, position4]
 
     # Plot combined results for total energy
-    plot_combined_results(R, T, energyTotal, fidModel1, fidModel2, fid_levels, energy_levels, 'total_energy_SS_combined20Q1000D_meas', plot_energy=True)
+    # plot_combined_results(R, T, energyTotal, fidModel1, fidModel2, fid_levels, energy_levels, 'total_energy_SS_combined20Q1000D_meas', plot_energy=True)
     plot_combined_results(R, T, energyTotal, fidModel3, fidModel4, fid_levels, energy_levels, 'total_energy_SS_combined20Q1000D', plot_energy=True)
     
     # logger.info(f'Minimum energy at {position} with value {energy_min}')
@@ -571,5 +571,5 @@ def main3():
 if __name__ == "__main__":
     # main3()
     print('Successfully started')
-    plot_energy_map(n_Q=2, depth=3)
+    plot_energy_map(n_Q=1, depth=1)
     print('Successfully ran')
