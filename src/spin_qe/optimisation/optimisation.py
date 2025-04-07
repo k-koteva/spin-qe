@@ -268,6 +268,28 @@ def find_min_and_index(values: list) -> Tuple[Any, int]:
     min_index = values.index(min_value)
     return min_value, min_index
 
+def plot_energy_map(
+    n_Q: int = 1,
+    depth: int = 1,
+    eff: str = "Small System",
+    tqb_range: tuple = (0.06, 10),
+    rabifreq_range: tuple = (0.01, 1000),
+    n_points: int = 100,
+    fid_levels: list[float] = [0.5, 0.8, 0.9],
+    energy_levels: list[float] = [1e-4, 1e-3, 1e-2],
+):
+    tqb = np.logspace(np.log10(tqb_range[0]), np.log10(tqb_range[1]), n_points)
+    rabifreq = np.logspace(np.log10(rabifreq_range[0]), np.log10(rabifreq_range[1]), n_points)
+    R, T = np.meshgrid(rabifreq, tqb, indexing='ij')
+
+    powerful, _, conductionP, cryoP, energyTotal, conductionE, cryoE = calculate_power_noise(n_Q, depth, eff, tqb, rabifreq)
+    fidModel1, fidModel2 = calculate_noise(n_Q, depth, eff, tqb, rabifreq)
+    fidModel3, fidModel4 = calculate_noise_nomeas(n_Q, depth, eff, tqb, rabifreq)
+
+    base_name = f"total_energy_SS_combined{n_Q}Q{depth}D"
+    plot_combined_results(R, T, energyTotal, fidModel1, fidModel2, fid_levels, energy_levels, f"{base_name}_meas", plot_energy=True)
+    plot_combined_results(R, T, energyTotal, fidModel3, fidModel4, fid_levels, energy_levels, base_name, plot_energy=True)
+
 def main():
     # nq = 100
     tqb = np.logspace(np.log10(0.06), np.log10(10), 100)
@@ -499,28 +521,6 @@ def plot_combined_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray,
     # fig.savefig(os.path.join(dropbox_folder, filename + '.pdf'), bbox_inches='tight')
     fig.savefig(os.path.join(results_folder, filename + '.pdf'), bbox_inches='tight')
     fig.savefig(os.path.join(results_folder, filename + '.svg'), bbox_inches='tight')
-
-def plot_energy_map(
-    n_Q: int = 1,
-    depth: int = 1,
-    eff: str = "Small System",
-    tqb_range: tuple = (0.06, 10),
-    rabifreq_range: tuple = (0.01, 1000),
-    n_points: int = 100,
-    fid_levels: list[float] = [0.5, 0.8, 0.9],
-    energy_levels: list[float] = [1e-4, 1e-3, 1e-2],
-):
-    tqb = np.logspace(np.log10(tqb_range[0]), np.log10(tqb_range[1]), n_points)
-    rabifreq = np.logspace(np.log10(rabifreq_range[0]), np.log10(rabifreq_range[1]), n_points)
-    R, T = np.meshgrid(rabifreq, tqb, indexing='ij')
-
-    powerful, _, conductionP, cryoP, energyTotal, conductionE, cryoE = calculate_power_noise(n_Q, depth, eff, tqb, rabifreq)
-    fidModel1, fidModel2 = calculate_noise(n_Q, depth, eff, tqb, rabifreq)
-    fidModel3, fidModel4 = calculate_noise_nomeas(n_Q, depth, eff, tqb, rabifreq)
-
-    base_name = f"total_energy_SS_combined{n_Q}Q{depth}D"
-    plot_combined_results(R, T, energyTotal, fidModel1, fidModel2, fid_levels, energy_levels, f"{base_name}_meas", plot_energy=True)
-    plot_combined_results(R, T, energyTotal, fidModel3, fidModel4, fid_levels, energy_levels, base_name, plot_energy=True)
 
 def main3():
     # Define temperature and Rabi frequency ranges
