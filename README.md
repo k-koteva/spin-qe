@@ -1,3 +1,3 @@
 # spin-qe
 
-A package for simulating quantum energetics of the spin qubit platform using models from experiments.
+A package for simulating quantum energetics of spin qubits using models from experiments.
