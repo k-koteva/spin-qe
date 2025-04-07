@@ -570,4 +570,6 @@ def main3():
 
 if __name__ == "__main__":
     # main3()
+    print('Successfully started')
     plot_energy_map(n_Q=2, depth=3)
+    print('Successfully ran')
