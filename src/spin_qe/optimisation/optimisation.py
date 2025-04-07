@@ -1,6 +1,6 @@
 import os
 from typing import Any, List, Tuple, Union, Optional
-
+import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
@@ -283,12 +283,13 @@ def plot_energy_map(
     R, T = np.meshgrid(rabifreq, tqb, indexing='ij')
 
     powerful, _, conductionP, cryoP, energyTotal, conductionE, cryoE = calculate_power_noise(n_Q, depth, eff, tqb, rabifreq)
-    fidModel1, fidModel2 = calculate_noise(n_Q, depth, eff, tqb, rabifreq)
-    fidModel3, fidModel4 = calculate_noise_nomeas(n_Q, depth, eff, tqb, rabifreq)
+    pd.DataFrame(energyTotal).to_csv("energy.csv", index=False)
+    # # fidModel1, fidModel2 = calculate_noise(n_Q, depth, eff, tqb, rabifreq)
+    # fidModel3, fidModel4 = calculate_noise_nomeas(n_Q, depth, eff, tqb, rabifreq)
 
-    base_name = f"total_energy_SS_combined{n_Q}Q{depth}D"
-    plot_combined_results(R, T, energyTotal, fidModel1, fidModel2, fid_levels, energy_levels, f"{base_name}_meas", plot_energy=True)
-    plot_combined_results(R, T, energyTotal, fidModel3, fidModel4, fid_levels, energy_levels, base_name, plot_energy=True)
+    # base_name = f"total_energy_SS_combined{n_Q}Q{depth}D"
+    # # plot_combined_results(R, T, energyTotal, fidModel1, fidModel2, fid_levels, energy_levels, f"{base_name}_meas", plot_energy=True)
+    # plot_combined_results(R, T, energyTotal, fidModel3, fidModel4, fid_levels, energy_levels, base_name, plot_energy=True)
 
 def main():
     # nq = 100
