@@ -11,7 +11,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import spin_qe.device.spin_qubits as sq
 
 
-def calculate_power_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray, calculate_energy: bool = True) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def calculate_power_noise(n_Q:int, depth: int, efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray, calculate_energy: bool = True) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     attens = [0, 0, 0, 3, 0, 0]
     stage_ts = [0.007, 0.1, 0.8, 4, 50, 300]
     silicon_abs = 0.0
@@ -28,7 +28,7 @@ def calculate_power_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray
         logger.info(f'Rabi frequency = {rabi}')
         for j, tq in enumerate(tqb):
             logger.info(f'Temperature = {tq}')
-            mySQ = sq.SpinQubit(n_q=20, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
+            mySQ = sq.SpinQubit(n_q=n_Q, depth=depth, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
                                 stages_ts=stage_ts, silicon_abs=silicon_abs)
             cryoGrid[i, j] = mySQ.cryo_power()
             conductionGrid[i, j] = mySQ.cables_power()
@@ -44,7 +44,7 @@ def calculate_power_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray
 
     return powerGrid, fidelityGrid, conductionGrid, cryoGrid, energyGrid, conductionEGrid, cryoEGrid 
 
-def calculate_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray, calculate_energy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def calculate_noise(n_Q:int, depth: int, efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray, calculate_energy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     attens = [0, 0, 0, 3, 0, 0]
     stage_ts = [0.007, 0.1, 0.8, 4, 50, 300]
     silicon_abs = 0.0
@@ -56,14 +56,14 @@ def calculate_noise(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray, calc
         logger.info(f'Rabi frequency = {rabi}')
         for j, tq in enumerate(tqb):
             logger.info(f'Temperature = {tq}')
-            mySQ = sq.SpinQubit(n_q=20, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
+            mySQ = sq.SpinQubit(n_q=n_Q, depth=depth, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
                                 stages_ts=stage_ts, silicon_abs=silicon_abs)
             fidelityModel1[i, j] = mySQ.fidelity(model='Slow')
             fidelityModel2[i, j] = mySQ.fidelity(model='Markov')
 
     return fidelityModel1, fidelityModel2
 
-def calculate_noise_nomeas(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray, calculate_energy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
+def calculate_noise_nomeas(n_Q:int, depth: int, efficiency: str, tqb: np.ndarray, rabifreq: np.ndarray, calculate_energy: bool = True) -> Tuple[np.ndarray, np.ndarray]:
     attens = [0, 0, 0, 3, 0, 0]
     stage_ts = [0.007, 0.1, 0.8, 4, 50, 300]
     silicon_abs = 0.0
@@ -75,7 +75,7 @@ def calculate_noise_nomeas(efficiency: str, tqb: np.ndarray, rabifreq: np.ndarra
         logger.info(f'Rabi frequency = {rabi}')
         for j, tq in enumerate(tqb):
             logger.info(f'Temperature = {tq}')
-            mySQ = sq.SpinQubit(n_q=20, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
+            mySQ = sq.SpinQubit(n_q=n_Q, depth=depth, Tq=tq, rabi=rabi, rabi_in_MHz=rabi * 1e6, atts_list=attens, efficiency=efficiency,
                                 stages_ts=stage_ts, silicon_abs=silicon_abs)
             fidelityModel1[i, j] = mySQ.fidelity_nomeas(model='Slow')
             fidelityModel2[i, j] = mySQ.fidelity_nomeas(model='Markov')
@@ -500,6 +500,28 @@ def plot_combined_results(R: np.ndarray, T: np.ndarray, powerful: np.ndarray,
     fig.savefig(os.path.join(results_folder, filename + '.pdf'), bbox_inches='tight')
     fig.savefig(os.path.join(results_folder, filename + '.svg'), bbox_inches='tight')
 
+def plot_energy_map(
+    n_Q: int = 1,
+    depth: int = 1,
+    eff: str = "Small System",
+    tqb_range: tuple = (0.06, 10),
+    rabifreq_range: tuple = (0.01, 1000),
+    n_points: int = 100,
+    fid_levels: list[float] = [0.5, 0.8, 0.9],
+    energy_levels: list[float] = [1e-4, 1e-3, 1e-2],
+):
+    tqb = np.logspace(np.log10(tqb_range[0]), np.log10(tqb_range[1]), n_points)
+    rabifreq = np.logspace(np.log10(rabifreq_range[0]), np.log10(rabifreq_range[1]), n_points)
+    R, T = np.meshgrid(rabifreq, tqb, indexing='ij')
+
+    powerful, _, conductionP, cryoP, energyTotal, conductionE, cryoE = calculate_power_noise(n_Q, depth, eff, tqb, rabifreq)
+    fidModel1, fidModel2 = calculate_noise(n_Q, depth, eff, tqb, rabifreq)
+    fidModel3, fidModel4 = calculate_noise_nomeas(n_Q, depth, eff, tqb, rabifreq)
+
+    base_name = f"total_energy_SS_combined{n_Q}Q{depth}D"
+    plot_combined_results(R, T, energyTotal, fidModel1, fidModel2, fid_levels, energy_levels, f"{base_name}_meas", plot_energy=True)
+    plot_combined_results(R, T, energyTotal, fidModel3, fidModel4, fid_levels, energy_levels, base_name, plot_energy=True)
+
 def main3():
     # Define temperature and Rabi frequency ranges
     tqb = np.logspace(np.log10(0.06), np.log10(10), 100)
@@ -544,5 +566,8 @@ def main3():
 
 # Call the main3 function to generate the plots
 
+
+
 if __name__ == "__main__":
-    main3()
+    # main3()
+    plot_energy_map(n_Q=2, depth=3)

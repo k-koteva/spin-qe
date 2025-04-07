@@ -9,11 +9,10 @@ from scipy.constants import h
 from spin_qe.components.cables import sum_conduction_power, sum_emptycryo_power
 from spin_qe.components.cryostat import Cryo
 from numpy.polynomial.polynomial import Polynomial
-depth = 1000
 wire_type = "304SS_UT_S"
 class SpinQubit(BaseModel):
     n_q: int = conint(ge=1, le=10000000000000000)
-    # depth: int = conint(ge=1, le=10000000000000000)
+    depth: int = conint(ge=1, le=10000000000000000)
     Tq: float = confloat(gt=0.0, le=300)
     f: float = Field(39.33e9, alias='f_in_GHz')
     rabi: float = Field(0.5e6, alias='rabi_in_MHz')
@@ -178,17 +177,17 @@ class SpinQubit(BaseModel):
         meas__noise_fit = Polynomial(fit_coeff_measurement)
         if model == 'Slow':
             # Rabi**4
-            # fidelity = 1-self.n_q*((depth**2)*1.44*(10**20)*(drive_noise_fit(self.Tq)/self.rabi**4))
+            # fidelity = 1-self.n_q*((self.depth**2)*1.44*(10**20)*(drive_noise_fit(self.Tq)/self.rabi**4))
             # logger.info(f"fid: {meas__noise_fit(self.Tq)}")
-            fidelity = 1-self.n_q*((depth**2)*1.44*(10**20)*(drive_noise_fit(self.Tq)/self.rabi**4) + meas__noise_fit(self.Tq))
-            # fidelity = 1-self.n_q*meas__noise_fit(self.Tq) - self.n_q*((depth**2)*144*drive_noise_fit(self.Tq)/self.rabi)
+            fidelity = 1-self.n_q*((self.depth**2)*1.44*(10**20)*(drive_noise_fit(self.Tq)/self.rabi**4) + meas__noise_fit(self.Tq))
+            # fidelity = 1-self.n_q*meas__noise_fit(self.Tq) - self.n_q*((self.depth**2)*144*drive_noise_fit(self.Tq)/self.rabi)
         elif model == 'Markov':
             # Rabi
-            # fidelity = 1-self.n_q*(depth*144*drive_noise_fit(self.Tq)/self.rabi)
+            # fidelity = 1-self.n_q*(self.depth*144*drive_noise_fit(self.Tq)/self.rabi)
             # logger.info(f"fid: {meas__noise_fit(self.Tq)}")
-            fidelity = 1-self.n_q*(depth*144*drive_noise_fit(self.Tq)/self.rabi + meas__noise_fit(self.Tq))
+            fidelity = 1-self.n_q*(self.depth*144*drive_noise_fit(self.Tq)/self.rabi + meas__noise_fit(self.Tq))
 
-            # fidelity = 1-self.n_q*meas__noise_fit(self.Tq) - self.n_q*(depth*144*drive_noise_fit(self.Tq)/self.rabi)
+            # fidelity = 1-self.n_q*meas__noise_fit(self.Tq) - self.n_q*(self.depth*144*drive_noise_fit(self.Tq)/self.rabi)
         else:
             raise ValueError("Invalid trend value. Please choose either 'slow' or 'markov'.")
 
@@ -201,17 +200,17 @@ class SpinQubit(BaseModel):
         # meas__noise_fit = Polynomial(fit_coeff_measurement)
         if model == 'Slow':
             # Rabi**4
-            # fidelity = 1-self.n_q*((depth**2)*1.44*(10**20)*(drive_noise_fit(self.Tq)/self.rabi**4))
+            # fidelity = 1-self.n_q*((self.depth**2)*1.44*(10**20)*(drive_noise_fit(self.Tq)/self.rabi**4))
             # logger.info(f"fid: {meas__noise_fit(self.Tq)}")
-            fidelity = 1-self.n_q*((depth**2)*1.44*(10**20)*(drive_noise_fit(self.Tq)/self.rabi**4))
-            # fidelity = 1 - self.n_q*((depth**2)*144*drive_noise_fit(self.Tq)/self.rabi)
+            fidelity = 1-self.n_q*((self.depth**2)*1.44*(10**20)*(drive_noise_fit(self.Tq)/self.rabi**4))
+            # fidelity = 1 - self.n_q*((self.depth**2)*144*drive_noise_fit(self.Tq)/self.rabi)
         elif model == 'Markov':
             # Rabi
-            # fidelity = 1-self.n_q*(depth*144*drive_noise_fit(self.Tq)/self.rabi)
+            # fidelity = 1-self.n_q*(self.depth*144*drive_noise_fit(self.Tq)/self.rabi)
             # logger.info(f"fid: {meas__noise_fit(self.Tq)}")
-            fidelity = 1-self.n_q*(depth*144*drive_noise_fit(self.Tq)/self.rabi)
+            fidelity = 1-self.n_q*(self.depth*144*drive_noise_fit(self.Tq)/self.rabi)
 
-            # fidelity = 1 - self.n_q*(depth*144*drive_noise_fit(self.Tq)/self.rabi)
+            # fidelity = 1 - self.n_q*(self.depth*144*drive_noise_fit(self.Tq)/self.rabi)
         else:
             raise ValueError("Invalid trend value. Please choose either 'slow' or 'markov'.")
 
